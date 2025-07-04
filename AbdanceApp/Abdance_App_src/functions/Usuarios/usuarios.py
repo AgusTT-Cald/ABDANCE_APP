@@ -1,8 +1,7 @@
 
 import functions_framework
-import firebase_admin
 from firebase_admin import credentials, firestore, auth
-from AbdanceApp.Abdance_App_src.functions.Cuotas.utilidades_cuotas import marcar_cuotas_eliminacion_usuario
+from functions.Cuotas.utilidades_cuotas import marcar_cuotas_eliminacion_usuario
 from firebase_init import db  # Firebase con base de datos inicializada
 from datetime import datetime
 from .auth_decorator import require_auth
