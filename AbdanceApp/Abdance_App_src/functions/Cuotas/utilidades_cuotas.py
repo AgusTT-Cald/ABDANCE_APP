@@ -178,7 +178,7 @@ def marcar_cuotas_eliminacion_usuario(dni_alumno):
             batch.commit()
 
     except Exception as e:
-        raise RuntimeError(e.with_traceback())
+        raise RuntimeError(e)
     
 
 def marcar_cuotas_eliminacion_disciplina(id_disciplina):
@@ -197,4 +197,4 @@ def marcar_cuotas_eliminacion_disciplina(id_disciplina):
         bulk.close()
 
     except Exception as e:
-        raise RuntimeError(e.with_traceback())
+        raise RuntimeError(e)
