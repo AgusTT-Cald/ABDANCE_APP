@@ -5,6 +5,7 @@ from firebase_init import db  # Firebase con base de datos inicializada
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud import firestore
 from functions.Otros.utilidades_datetime import (
     TIME_ZONE,
     MESES
@@ -152,3 +153,48 @@ def es_monto_nuevo_15(concepto_cuota, dni_alumno):
         return True
     else:
         return False
+
+
+def marcar_cuotas_eliminacion_usuario(dni_alumno):
+    try:
+        #Se buscan todas las cuotas del alumno
+        cuotas_query = db.collection('cuotas').where(filter=FieldFilter("dniAlumno", "==", dni_alumno))
+        docs = list(cuotas_query.stream())
+
+        #Tamaño de cada batch (500 es el limite del batch de FireStore)
+        batch_size = 400
+
+        #Se itera por cada batch
+        for i in range(0, len(docs), batch_size):
+            batch = db.batch()
+            chunk = docs[i : i + batch_size]
+
+            #Se los pone en un batch a cada cuota
+            for doc in chunk:
+                ref = db.collection('cuotas').document(doc.id)
+                batch.update(ref, {"dniAlumno": "Alum. Eliminado"})
+
+            #Se actualiza el batch actual
+            batch.commit()
+
+    except Exception as e:
+        raise RuntimeError(e.with_traceback())
+    
+
+def marcar_cuotas_eliminacion_disciplina(id_disciplina):
+    try:
+        #Cliente y el Bulk Writer
+        client = firestore.Client()
+        bulk = client.bulk_writer()
+
+        #Se buscan todas las cuotas que corresponden a la disciplina
+        cuotas_query = db.collection('cuotas').where(filter=FieldFilter("idDisciplina", "==", id_disciplina))
+
+        for doc in cuotas_query.stream():
+            ref = client.collection('cuotas').document(doc.id)
+            bulk.update(ref, {"idDisciplina": "Disc. Eliminada"})
+        
+        bulk.close()
+
+    except Exception as e:
+        raise RuntimeError(e.with_traceback())

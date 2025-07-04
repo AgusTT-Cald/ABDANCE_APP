@@ -4,6 +4,7 @@ import functions_framework
 import firebase_admin
 from collections import OrderedDict
 from firebase_admin import credentials, firestore, auth
+from AbdanceApp.Abdance_App_src.functions.Cuotas.utilidades_cuotas import marcar_cuotas_eliminacion_disciplina
 from firebase_init import db  # Firebase con base de datos inicializada
 from datetime import datetime
 from functions.Usuarios.auth_decorator import require_auth
@@ -254,6 +255,7 @@ def deleteDisciplina(request, uid=None, role=None):
     if not disciplina_doc.exists:
         return {'error': 'No se encontro la disciplina especificada'}, 404
     
+    marcar_cuotas_eliminacion_disciplina(data['id'])
     #eliminacion de BD firestore
     disciplina_ref.delete()
     return {'message':'Disciplina eliminada correctamente'}, 200
