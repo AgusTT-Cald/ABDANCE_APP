@@ -1,5 +1,6 @@
 """ Un archivo que contiene utilidades para los archivos de la carpeta de Cuotas
 (existe mas que nada para evitar un error de dependencia circular) """
+from numbers import Number
 from collections import OrderedDict
 from firebase_init import db  # Firebase con base de datos inicializada
 from datetime import datetime
@@ -10,6 +11,8 @@ from functions.Otros.utilidades_datetime import (
     TIME_ZONE,
     MESES
 )
+
+
 
 METODOS_PAGO = {
     "account_money": "Dinero de cuenta",
@@ -42,9 +45,14 @@ def ordenar_datos_cuotas(data_cuota, precio_cuota, cuota_id, disciplina_id=None)
     cuota_data["precio_cuota"] = precio_cuota
     
     id_disciplina = disciplina_id if disciplina_id is not None else data_cuota.get("idDisciplina")
+
+    if id_disciplina == "Disc. Eliminada":
+        cuota_data["nombreDisciplina"] = id_disciplina
+        return cuota_data
+    
     disciplina = db.collection('disciplinas').document(id_disciplina).get().to_dict()
     cuota_data["nombreDisciplina"] = disciplina.get("nombre")
-        
+
     return cuota_data
 
 
@@ -68,7 +76,10 @@ def get_monto_cuota(cuota_id, recargo_day):
     if cuota_doc.get("estado").lower() == "pagada" or cuota_doc.get("montoPagado") != 0:
         return cuota_doc.get("montoPagado")
 
-    disciplina_id = cuota_data.get("idDisciplina")
+    disciplina_id = cuota_doc.get("idDisciplina")
+    if disciplina_id == "Disc. Eliminada":
+        return cuota_doc.get("montoPagado")
+
     if not disciplina_id:
         return {'error':'Una de las cuotas no tiene disciplina asignada.'}, 400
     
@@ -112,8 +123,12 @@ def determinar_monto(precios, cuota_data, recargo_day):
     if (estado_cuota != "pagada" and en_recargo(today)) or (pago_dt and en_recargo(pago_dt)):
         return precios.get("montoRecargo")
     
-    #Retorno de monto de alumno ingresado el 15 o despues.
     dni_alumno = cuota_data.get("dniAlumno")
+    #Comprobación de alumno eliminado
+    if not isinstance(dni_alumno, Number):
+        return cuota_data.get("montoPagado")
+    
+    #Retorno de monto de alumno ingresado el 15 o despues.
     if es_monto_nuevo_15(concepto_cuota, dni_alumno):
         return precios.get("montoNuevo15")  
     

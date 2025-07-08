@@ -118,8 +118,3 @@ def establecer_pago(data_payment):
             'metodoPago': metodo_pago_traducido,
             'montoPagado': cantidad_transaccion
         })
-    #TODO:Logica para el pago de las entradas de eventos aquí    
-    elif status_pago == "approved" and id_objeto and tipo_objeto == "entrada_evento":
-        return 
-    
-    

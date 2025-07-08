@@ -105,7 +105,7 @@ export function CuotaAlumnoTable() {
                   <td className={`${tableDatacellStyle} truncate max-w-[100px]`}>{c.dniAlumno}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[110px] capitalize`}>{c.estado}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[200px]`}>{c.fechaPago?.trim() == "" ? "-" : generalDateParsing(c.fechaPago)}</td>
-                  <td className={`${tableDatacellStyle} truncate max-w-[200px]`}>{c.nombreDisciplina}</td>
+                  <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{c.nombreDisciplina}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{c.metodoPago?.trim() == "" ? "-" : c.metodoPago}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[50px]`}>${c.precio_cuota}</td>
                 </tr>
@@ -149,7 +149,7 @@ export function CuotaAlumnoTable() {
         {/* Modal de confirmación e integración de MercadoPago */}
         {selectedCuota && (
           <Dialog open={openModal} onClose={closeModal} className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-indigo-200 p-6 rounded-lg shadow-lg max-w-md w-full text-black">
+            <div className="bg-indigo-200 p-6 rounded-lg shadow-lg max-w-md w-full text-black max-h-[90vh] overflow-y-auto">
               <DialogTitle className="text-xl font-extrabold mb-4 text-center">Confirmar Pago de Cuota</DialogTitle>
                 <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-auto mb-5">
                     <div className="relative">

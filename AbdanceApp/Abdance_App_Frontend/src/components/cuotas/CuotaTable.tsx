@@ -1,6 +1,6 @@
 import Loader from "../Loader";
 import generalDateParsing from "../../utils/generalDateParsing";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuthFetch } from "../../hooks/useAuthFetch";
 import { Dialog, DialogTitle } from "@headlessui/react";
 
@@ -19,38 +19,73 @@ type Cuota = {
 };
 
 //Ventada de tipo modal para pagar las cuotas seleccionadas.
-export function PagoManualModal({open, onClose, selectedCuotas, onSuccess, }: Readonly<{
-    open: boolean;
-    onClose: () => void;
-    selectedCuotas: Cuota[];
-    onSuccess: () => void;
-    }>) {
+export function PagoManualModal({
+  open,
+  onClose,
+  selectedCuotas,
+  onSuccess,
+}: Readonly<{
+  open: boolean;
+  onClose: () => void;
+  selectedCuotas: Cuota[];
+  onSuccess: () => void;
+}>) {
   const [loading, setLoading] = useState(false);
+  const [montos, setMontos] = useState<Record<string, string>>({});
 
-  //Endpoint para pagar las cuotas seleccionadas
   const token = localStorage.getItem("token");
   const endpointUrl = import.meta.env.VITE_API_URL;
+
+  // Inicializar montos con los valores actuales cuando se abre el modal
+  useEffect(() => {
+    if (open) {
+      const iniciales: Record<string, string> = {};
+      selectedCuotas.forEach((c) => {
+        iniciales[c.id] = c.precio_cuota;
+      });
+      setMontos(iniciales);
+    }
+  }, [open, selectedCuotas]);
+
+  const handleMontoChange = (id: string, value: string) => {
+    setMontos((prev) => ({ ...prev, [id]: value }));
+  };
+
   const handleConfirm = async () => {
     setLoading(true);
-    const listaIds = selectedCuotas.map(c => c.id);
+
+    // Validar montos: que sean números positivos válidos
+    for (const [id, montoStr] of Object.entries(montos)) {
+      const num = parseFloat(montoStr);
+      if (isNaN(num) || num <= 0) {
+        alert(`Monto inválido para la cuota con ID: ${id}`);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Armar el nuevo formato de lista_cuotas: [{id: monto}, ...]
+    const listaCuotas = Object.entries(montos).map(([id, montoStr]) => ({
+      [id]: parseFloat(montoStr),
+    }));
 
     try {
-      const res = await fetch(
-        `${endpointUrl}/pagar_cuota/manual?dia_recargo=11`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ lista_cuotas: listaIds }),
-        }
-      );
+      const res = await fetch(`${endpointUrl}/pagar_cuota/manual`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ lista_cuotas: listaCuotas }),
+      });
+
       if (!res.ok) throw new Error("Error en el pago manual");
+
       onSuccess();
       onClose();
     } catch (err) {
       console.error(err);
+      alert("Ocurrió un error al procesar el pago.");
     } finally {
       setLoading(false);
     }
@@ -58,20 +93,46 @@ export function PagoManualModal({open, onClose, selectedCuotas, onSuccess, }: Re
 
   return (
     <Dialog open={open} onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="bg-indigo-200 p-6 rounded-lg shadow-lg max-w-md w-full text-black">
-        <DialogTitle className="text-xl font-extrabold mb-4 text-center">Confirmar Pago Manual</DialogTitle>
-        <div className="space-y-2 max-h-60 overflow-auto mb-8">
+      <div className="bg-indigo-200 p-6 rounded-lg shadow-lg max-w-md w-full text-black max-h-[90vh] overflow-y-auto">
+        <DialogTitle className="text-xl font-extrabold mb-4 text-center">
+          Confirmar Pago Manual
+        </DialogTitle>
+
+        <div className="space-y-4 max-h-100 overflow-auto mb-8">
           {selectedCuotas.map(c => (
-            <div key={c.id} className=""> 
-              <ul className="list-inside list-disc"><em><strong>ID de Cuota: </strong></em>{c.id}
-                <li><b>DNI Alumno: </b>{c.dniAlumno}</li>
-                <li>Concepto: {c.concepto}</li>
-                <li>Precio de la Cuota: {c.precio_cuota}</li>
-              </ul>
+            <div
+              key={c.id}
+              className="bg-white rounded-lg shadow-md p-4 flex flex-col space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">ID de Cuota</span>
+                <span className="text-sm text-gray-600">{c.id}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">DNI Alumno</span>
+                <span className="text-sm text-gray-600">{c.dniAlumno}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Concepto</span>
+                <span className="text-sm text-gray-600">{c.concepto}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Monto a pagar</span>
+                <input
+                  type="number"
+                  className="w-24 p-1 border-b border-gray-300 py-1 focus:border-b-2 focus:border-blue-700 transition-colors focus:outline-none peer bg-inherit"
+                  value={montos[c.id] ?? ''}
+                  onChange={e => handleMontoChange(c.id, e.target.value)}
+                />
+              </div>
             </div>
           ))}
         </div>
-        <p className="text-sm text-black text-center italic mb-3">Las fechas de pago quedarán con la fecha y hora actual</p>
+
+        <p className="text-sm text-black text-center italic mb-3">
+          Las fechas de pago quedarán con la fecha y hora actual
+        </p>
+
         <div className="flex justify-end space-x-2">
           <button
             onClick={onClose}
@@ -85,7 +146,7 @@ export function PagoManualModal({open, onClose, selectedCuotas, onSuccess, }: Re
             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
             disabled={loading}
           >
-            {loading ? 'Procesando...' : 'Confirmar'}
+            {loading ? "Procesando..." : "Confirmar"}
           </button>
         </div>
       </div>
