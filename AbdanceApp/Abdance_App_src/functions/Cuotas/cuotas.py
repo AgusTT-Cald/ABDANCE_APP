@@ -1,9 +1,10 @@
-from numbers import Number
 import os
 import hashlib
 import hmac
+from numbers import Number
 from zoneinfo import ZoneInfo
 from functions.Usuarios.auth_decorator import require_auth
+from functions.Usuarios.auth_decorator_IAM import require_auth_schedule
 from functions.Cuotas.pagos import establecer_pago
 from functions.Cuotas.utilidades_cuotas import get_monto_cuota, ordenar_datos_cuotas
 from functions.Disciplinas.disciplinas import getAlumnosPorDisciplina, ordenar_datos_disciplina
@@ -347,7 +348,7 @@ def pagar_cuota(request):
         return {'error': str(e)}, 500
 
 
-#@require_auth(required_roles=['admin'])
+@require_auth(required_roles=['admin'])
 def pagar_cuotas_manualmente(request_cuotas_id, uid=None, role=None):
     try:
         data = request_cuotas_id.get_json(silent=True) or {}
@@ -386,7 +387,8 @@ def pagar_cuotas_manualmente(request_cuotas_id, uid=None, role=None):
         return {'error': str(e)}, 500
 
 
-def crear_cuotas_mes(request):
+@require_auth(required_roles=['admin'])
+def crear_cuotas_mes(request, uid=None, role=None):
     """Funcion que crea las cuotas para todos los alumnos de cada una de las disciplinas en las
     que estén agregados.
 
@@ -402,6 +404,8 @@ def crear_cuotas_mes(request):
 
         if 'es_matricula' not in data:
             return {'error': 'Se requiere especificar si es matricula o no.'}, 400
+        if 'mes' not in data:
+            return {'error': 'Se requiere especificar el mes.'}, 400
         
         disciplinas_data = []
         disciplinas_ref = db.collection('disciplinas')
@@ -417,6 +421,10 @@ def crear_cuotas_mes(request):
         
         disciplinas_list = disciplinas_data
         es_matricula = True if data["es_matricula"] == 1 else False
+
+        mes = int(data["mes"]) if 'mes' in data else datetime.now(ZoneInfo(TIME_ZONE)).month
+        current_year = datetime.now(ZoneInfo(TIME_ZONE)).year
+        bulk = db.bulk_writer()
 
         cant_creada = 0
 
@@ -436,8 +444,7 @@ def crear_cuotas_mes(request):
                 cuota_ref = db.collection("cuotas").document()
                 cuota_id = cuota_ref.id
 
-                current_year = datetime.now(ZoneInfo(TIME_ZONE)).year
-
+                
                 #Generar datos pre_establecidos
                 data_cuota['id'] = cuota_id
                 data_cuota['dniAlumno'] = dni_alumno
@@ -448,29 +455,39 @@ def crear_cuotas_mes(request):
                 data_cuota['montoPagado'] = 0
 
                 if es_matricula:
+                    #Siguen el formato: Matricula/(Año_Actual)
                     data_cuota["concepto"] = f"Matricula/{current_year}"
                 else:
-                    current_month = datetime.now(ZoneInfo(TIME_ZONE)).month
-                    data_cuota["concepto"] = f"{MESES_REVRSD[current_month].capitalize()}/{current_year}"
+                    #Siguen el formato: (Nombre_Mes)/(Año_Actual)
+                    data_cuota["concepto"] = f"{MESES_REVRSD[mes].capitalize()}/{current_year}"
                     
                 #guardar documento con el id
-                cuota_ref.set(data_cuota)
+                #cuota_ref.set(data_cuota)
+                bulk.set(cuota_ref, data_cuota)
 
                 cant_creada += 1
                 cuotas_creadas_dnis.append(dni_alumno)
 
+        bulk.close()
         return f"Se crearon un total de: {cant_creada} cuotas.", 201
 
     except Exception as e:
         return {'error': str(e)}, 500
 
 
-def eliminar_cuotas_mes(request):
+""" #@require_auth(required_roles=['admin'])
+def eliminar_cuotas_mes(request, uid=None, role=None):
     try:
         data = request.get_json(silent=True) or {}
 
-        if 'anios_a_restar' not in data:
-            return {'error': 'Se requiere especificar la cantidad de años a restar al actual (anios_a_restar). \nPor ejemplo, pasar "2" en el año 2025 borrará todas las cuotas del mes actual del año 2023'}, 400
+        if 'anio' not in data:
+            return {'error': 'Se requiere espe'}, 400
+        if 'mes' not in data:
+            return {'error': 'Se requiere especificar el mes (rango 1 al 12) o indicar "0" para borrar todas las cuotas del año.'}, 400
+
+        #Cliente y el Bulk Writer
+        client = firestore.Client()
+        bulk = client.bulk_writer()
 
         #Se traen solo las cuotas necesarias (las del mismo mes del año actual que el del
         #año resultante de la resta entre el actual y la variable "anios_a_restar").
@@ -489,6 +506,40 @@ def eliminar_cuotas_mes(request):
 
         return f"Se borraron correctamente {cant_borrada} cuotas.", 200
 
+
+    except Exception as e:
+        return {'error': str(e)}, 500 """
+
+@require_auth_schedule(required_roles=['scheduler'], audience="https://southamerica-east1-snappy-striker-455715-q2.cloudfunctions.net/main/eliminar-cuotas-forma-automatica")
+def eliminar_cuotas_forma_automatica(request, uid=None, role=None):
+    try:
+        data = request.get_json(silent=True) or {}
+
+        if 'anios_a_restar' not in data:
+            return {'error': 'Se requiere especificar el numero a restar al numero del año actual. \nPor ejemplo: un valor de 2 borraría todas las cuotas del año 2023 si el año actual es 2025.'}, 400
+
+        #Bulk Writer
+        bulk = db.bulk_writer()
+
+        #Se traen solo las cuotas necesarias (las del mismo mes del año actual que el del
+        #año resultante de la resta entre el actual y la variable "anios_a_restar").
+        anio_borrado = datetime.now(ZoneInfo(TIME_ZONE)).year - int(data.get("anios_a_restar"))
+        cant_borrada = 0
+        
+        for month_number in range(1, 12):
+            current_month_str = MESES_REVRSD[month_number].capitalize()
+            str_filtro = f"{current_month_str}/{anio_borrado}"
+        
+            cuotas_ref = db.collection('cuotas').where(filter=FieldFilter("concepto", "==", str_filtro))
+
+            for doc in cuotas_ref.stream():
+                ref = db.collection('cuotas').document(doc.id)
+                bulk.delete(ref)
+                cant_borrada += 1
+        
+        bulk.close()
+
+        return f"Se borraron correctamente {cant_borrada} cuotas.", 200
 
     except Exception as e:
         return {'error': str(e)}, 500

@@ -18,7 +18,7 @@ from functions.Cuotas.cuotas import (
     pagar_cuota, 
     pagar_cuotas_manualmente,
     crear_cuotas_mes,
-    eliminar_cuotas_mes
+    eliminar_cuotas_forma_automatica
 )
 from functions.Estadisticas.estadisticas import (
     total_pagado_mes,
@@ -81,8 +81,8 @@ def main(request):
         return apply_cors(pagar_cuotas_manualmente(request))
     elif path == "/crear-cuotas-mes":
         return apply_cors(crear_cuotas_mes(request))
-    elif path == "/eliminar-cuotas-mes":
-        return apply_cors(eliminar_cuotas_mes(request))
+    elif path == "/eliminar-cuotas-forma-automatica":
+        return apply_cors(eliminar_cuotas_forma_automatica(request))
     elif path == "/estadisticas/total-del-mes":
         return apply_cors(total_pagado_mes(request))
     elif path == "/estadisticas/totales-por-anio":

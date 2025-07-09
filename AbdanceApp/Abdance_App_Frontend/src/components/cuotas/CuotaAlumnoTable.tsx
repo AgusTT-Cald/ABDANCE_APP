@@ -77,7 +77,7 @@ export function CuotaAlumnoTable() {
             {disciplinas.map(d => <option className="capitalize" key={d} value={d}>{d}</option>)}
           </select>
         </div>
-      <div className="w-full overflow-x-auto hidden md:block">
+      <div className="w-full overflow-auto hidden md:block">
         <p className={`${cuotas?.length=== 0 ? 'bg-[#fff0] text-grey-700 text-2xl justify-center' : 'hidden'}`}>
           ¡Usted aún no tiene ninguna cuota registrada!
         </p>

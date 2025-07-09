@@ -242,12 +242,12 @@ export function CuotaAdminTable() {
         </div>
       </div>
 
-      <div className="w-full overflow-x-auto">
+      <div className="w-full overflow-auto">
       <div className="min-w-[640px] mx-auto">
         <table className="table-fixed min-w-[99%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1 w-auto">
           <thead>
             <tr className="bg-transparent">
-              <th></th>
+              <th className="min-w-[35px]"></th>
               <th className={tableHeaderStyle + " w-[40px]"}>Concepto</th>
               <th className={tableHeaderStyle + " w-[40px]"}>DNI Alumno</th>
               <th className={tableHeaderStyle + " w-[75px]"}>Estado</th>
@@ -260,7 +260,7 @@ export function CuotaAdminTable() {
           <tbody>
             {filteredCuotas?.map(c => (
               <tr key={c.id} >
-                <td className={selectedIds.has(c.id) ? 'bg-purple-200 rounded-lg md:bg-transparent p-2 min-w-5 w-8' : 'p-2 min-w-5 w-8'}>
+                <td className={selectedIds.has(c.id) ? 'bg-purple-200 rounded-lg md:bg-transparent truncate max-w-[35px] p-2 min-w-35 w-8' : 'truncate max-w-[20px] p-2 min-w-5 w-8'}>
                   <input
                     className="h-5 w-5 flex rounded-md border border-[#a2a1a833] light:bg-[#e8e8e8] dark:bg-[#212121] peer-checked:bg-[#7152f3] transition cursor-pointer"
                     type="checkbox"
