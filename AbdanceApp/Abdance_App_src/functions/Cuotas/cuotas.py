@@ -395,6 +395,7 @@ def crear_cuotas_mes(request, uid=None, role=None):
     Args:
         request: Datos de la HTTP Request.
         "es_matricula": 1 (true) || 0 (false) 
+        "mes": 1 .. 12
 
     Returns:
         HTTPResponse: Responde apropiadamente con error o un 201 dependiendo de si todo salió bien.
@@ -422,8 +423,10 @@ def crear_cuotas_mes(request, uid=None, role=None):
         disciplinas_list = disciplinas_data
         es_matricula = True if data["es_matricula"] == 1 else False
 
-        mes = int(data["mes"]) if 'mes' in data else datetime.now(ZoneInfo(TIME_ZONE)).month
+        mes_num = int(data["mes"])
+        mes = mes_num if mes_num in range(1, 12) else datetime.now(ZoneInfo(TIME_ZONE)).month
         current_year = datetime.now(ZoneInfo(TIME_ZONE)).year
+
         bulk = db.bulk_writer()
 
         cant_creada = 0
@@ -469,7 +472,7 @@ def crear_cuotas_mes(request, uid=None, role=None):
                 cuotas_creadas_dnis.append(dni_alumno)
 
         bulk.close()
-        return f"Se crearon un total de: {cant_creada} cuotas.", 201
+        return {"mensaje": f"Se crearon un total de: {cant_creada} cuotas."}, 201
 
     except Exception as e:
         return {'error': str(e)}, 500

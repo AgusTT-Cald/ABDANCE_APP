@@ -3,7 +3,7 @@ import generalDateParsing from "../../utils/generalDateParsing";
 import { useEffect, useState } from "react";
 import { useAuthFetch } from "../../hooks/useAuthFetch";
 import { Dialog, DialogTitle } from "@headlessui/react";
-
+import BotonCreacionCuotas from "./BotonCreacionCuotas";
 
 
 type Cuota = {
@@ -78,14 +78,13 @@ export function PagoManualModal({
         },
         body: JSON.stringify({ lista_cuotas: listaCuotas }),
       });
-
-      if (!res.ok) throw new Error("Error en el pago manual");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
 
       onSuccess();
       onClose();
-    } catch (err) {
-      console.error(err);
-      alert("Ocurrió un error al procesar el pago.");
+    } catch (err: any) {
+      alert(err);
     } finally {
       setLoading(false);
     }
@@ -93,7 +92,7 @@ export function PagoManualModal({
 
   return (
     <Dialog open={open} onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="bg-indigo-200 p-6 rounded-lg shadow-lg max-w-md w-full text-black max-h-[90vh] overflow-y-auto">
+      <div className="bg-gradient-to-t from-indigo-200 via-indigo-400 to-indigo-600 p-6 rounded-lg shadow-lg max-w-md w-full text-black max-h-[90vh] overflow-y-auto">
         <DialogTitle className="text-xl font-extrabold mb-4 text-center">
           Confirmar Pago Manual
         </DialogTitle>
@@ -157,8 +156,8 @@ export function PagoManualModal({
 
 // Tabla de cuotas para Admin
 export function CuotaAdminTable() {
-  const endpointUrl = import.meta.env.VITE_API_URL;
   const [reloadFlag, setReloadFlag] = useState(0);
+  const endpointUrl = import.meta.env.VITE_API_URL;
   const endpoint = `${endpointUrl}/cuotas?dia_recargo=11&reload=${reloadFlag}`;
   const { data: cuotas, loading, error } = useAuthFetch<Cuota[]>(endpoint);
 
@@ -170,11 +169,11 @@ export function CuotaAdminTable() {
   const [disciplinaFilter, setDisciplinaFilter] = useState<string>('');
   const [dniFilter, setDniFilter] = useState<string>('');
 
-  // Extraer valores únicos para selects
+  //Se extrae valores únicos para cada select
   const estados = Array.from(new Set(cuotas?.map(c => c.estado))).sort((a, b) => a.localeCompare(b));
   const disciplinas = Array.from(new Set(cuotas?.map(c => c.nombreDisciplina))).sort((a, b) => a.localeCompare(b));
 
-  // Filtrar datos
+  //Filtrado de datos
   const filteredCuotas = cuotas?.filter(c => {
     return (
       (!estadoFilter || c.estado === estadoFilter) &&
@@ -247,7 +246,7 @@ export function CuotaAdminTable() {
         <table className="table-fixed min-w-[99%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1 w-auto">
           <thead>
             <tr className="bg-transparent">
-              <th className="min-w-[35px]"></th>
+              <th className="min-w-[30px] max-w-[35px] w-15"></th>
               <th className={tableHeaderStyle + " w-[40px]"}>Concepto</th>
               <th className={tableHeaderStyle + " w-[40px]"}>DNI Alumno</th>
               <th className={tableHeaderStyle + " w-[75px]"}>Estado</th>
@@ -260,7 +259,7 @@ export function CuotaAdminTable() {
           <tbody>
             {filteredCuotas?.map(c => (
               <tr key={c.id} >
-                <td className={selectedIds.has(c.id) ? 'bg-purple-200 rounded-lg md:bg-transparent truncate max-w-[35px] p-2 min-w-35 w-8' : 'truncate max-w-[20px] p-2 min-w-5 w-8'}>
+                <td className={selectedIds.has(c.id) ? 'bg-purple-200 rounded-lg md:bg-transparent truncate max-w-[35px] p-2 min-w-5 w-8' : 'truncate max-w-[20px] p-2 min-w-5 w-8'}>
                   <input
                     className="h-5 w-5 flex rounded-md border border-[#a2a1a833] light:bg-[#e8e8e8] dark:bg-[#212121] peer-checked:bg-[#7152f3] transition cursor-pointer"
                     type="checkbox"
@@ -285,10 +284,14 @@ export function CuotaAdminTable() {
         <button
           onClick={openModal}
           disabled={selectedIds.size === 0}
-          className="mt-4 mb-4 px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          className="mt-4 mb-2 px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
         >
           Pagar Seleccionadas
         </button>
+        
+        <div className="mb-4">
+          <BotonCreacionCuotas></BotonCreacionCuotas>
+        </div>
 
         <PagoManualModal
           open={open}

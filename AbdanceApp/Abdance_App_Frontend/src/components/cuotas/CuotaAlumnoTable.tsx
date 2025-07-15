@@ -37,11 +37,14 @@ export function CuotaAlumnoTable() {
   const { data: cuotas, loading, error } = useAuthFetch<Cuota[]>(endpoint ?? '');
 
   const [disciplinaFilter, setDisciplinaFilter] = useState<string>('');
+  const [conceptoFilter, setConceptoFilter] = useState<string>('');
+
   const disciplinas = Array.from(new Set(cuotas?.map(c => c.nombreDisciplina))).sort((a, b) => a.localeCompare(b));
 
   const filteredCuotas = cuotas?.filter(c => {
     return (
-      (!disciplinaFilter || c.nombreDisciplina === disciplinaFilter)
+      (!disciplinaFilter || c.nombreDisciplina === disciplinaFilter) &&
+      (!conceptoFilter || c.concepto.includes(conceptoFilter))
     );
   });
 
@@ -65,7 +68,7 @@ export function CuotaAlumnoTable() {
   return (
     <>
       <>
-      <div className="flex flex-wrap gap-4 gap-x-6 mb-4 mx-4 justify-center md:justify-around"></div>
+      <div className="flex flex-wrap gap-4 gap-x-6 mb-4 mx-4 justify-center md:justify-around">
         <div className="flex flex-col justify-center mb-3">
           <p className="block text-lg font-medium text-gray-200 md:text-gray-800">Disciplina:</p>
           <select
@@ -77,6 +80,17 @@ export function CuotaAlumnoTable() {
             {disciplinas.map(d => <option className="capitalize" key={d} value={d}>{d}</option>)}
           </select>
         </div>
+        <div className="flex flex-col items-center">
+          <p className="block text-lg font-medium text-gray-200 md:text-gray-800">Concepto:</p>
+          <input
+            type="text"
+            className="text-gray-900 mt-1 block w-full rounded border-gray-300 bg-pink-300 p-2 min-w-[180px] max-w-[180px]"
+            placeholder="Buscar por concepto..."
+            value={conceptoFilter}
+            onChange={e => setConceptoFilter(e.target.value)}
+          />
+        </div>
+      </div>  
       <div className="w-full overflow-auto hidden md:block">
         <p className={`${cuotas?.length=== 0 ? 'bg-[#fff0] text-grey-700 text-2xl justify-center' : 'hidden'}`}>
           ¡Usted aún no tiene ninguna cuota registrada!
@@ -149,7 +163,7 @@ export function CuotaAlumnoTable() {
         {/* Modal de confirmación e integración de MercadoPago */}
         {selectedCuota && (
           <Dialog open={openModal} onClose={closeModal} className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-indigo-200 p-6 rounded-lg shadow-lg max-w-md w-full text-black max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-t from-indigo-200 via-indigo-400 to-indigo-600 p-6 rounded-lg shadow-lg max-w-md w-full text-black max-h-[90vh] overflow-y-auto">
               <DialogTitle className="text-xl font-extrabold mb-4 text-center">Confirmar Pago de Cuota</DialogTitle>
                 <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-auto mb-5">
                     <div className="relative">
@@ -160,7 +174,7 @@ export function CuotaAlumnoTable() {
                           {selectedCuota.concepto}
                         </div>
                         <div className="mt-2 text-gray-600 mb-5">
-                          <p><strong>DNI Alumno: </strong>{selectedCuota.dniAlumno}</p>
+                          <p><strong>DNI: </strong>{selectedCuota.dniAlumno}</p>
                           <p><strong>Precio: </strong>${selectedCuota.precio_cuota}</p>
                         </div>
                         <p className="mt-2 text-sm text-gray-500 italic my-5">Se guardará la fecha de pago como el dia y hora actuales.</p>
@@ -169,7 +183,7 @@ export function CuotaAlumnoTable() {
                         </div>
                         <CrearPreferencia cuotaId={selectedCuota.id} onCompleted={() => { closeModal(); setReload(r=>r+1); }} />
                         <h2
-                          className="text-base font-medium tracking-tighter text-gray-600 lg:text-3xl mt-5"
+                          className="text-base font-medium tracking-tighter text-gray-600 lg:text-1xl mt-5"
                         >
                           Pagarás mediante Mercado Pago, podrás usar tarjetas de debito y credito además de tu dinero de cuenta.
                         </h2>

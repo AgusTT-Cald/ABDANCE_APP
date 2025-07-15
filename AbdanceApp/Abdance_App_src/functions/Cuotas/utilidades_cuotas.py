@@ -89,7 +89,7 @@ def get_monto_cuota(cuota_id, recargo_day):
         return {'error':'Una de las disciplinas no fue encontrada o no existe.'}, 400
     
     precios = disciplina_doc.to_dict().get("precios", {})
-
+    
     return determinar_monto(precios, cuota_data, int(recargo_day))
 
 
@@ -103,11 +103,11 @@ def determinar_monto(precios, cuota_data, recargo_day):
         return precios.get("matriculaAnual")
     
     #Calculo y Retorno de montoRecargo
-    today = datetime.now(ZoneInfo(TIME_ZONE))
+    hoy = datetime.now(ZoneInfo(TIME_ZONE))
 
     def en_recargo(dt: datetime):
-        # dt aquí ya será tz-aware si viene de Firestore, o naive si no,
-        # así que iguala ambos usando .astimezone(...) o ignorando tzinfo
+        #dt aquí ya será tz-aware si viene de Firestore, o naive si no,
+        #así que iguala ambos usando .astimezone(...) o ignorando tzinfo
         local = dt
         if dt.tzinfo:
             local = dt.astimezone(ZoneInfo(TIME_ZONE))
@@ -120,12 +120,12 @@ def determinar_monto(precios, cuota_data, recargo_day):
         else:
             pago_dt = fecha_pago_cuota
 
-    if (estado_cuota != "pagada" and en_recargo(today)) or (pago_dt and en_recargo(pago_dt)):
+    if (estado_cuota != "pagada" and en_recargo(hoy)) or (pago_dt and en_recargo(pago_dt)):
         return precios.get("montoRecargo")
     
-    dni_alumno = cuota_data.get("dniAlumno")
+    dni_alumno: str = cuota_data.get("dniAlumno")
     #Comprobación de alumno eliminado
-    if not isinstance(dni_alumno, Number):
+    if not dni_alumno.strip().isdigit():
         return cuota_data.get("montoPagado")
     
     #Retorno de monto de alumno ingresado el 15 o despues.
@@ -158,7 +158,7 @@ def es_monto_nuevo_15(concepto_cuota, dni_alumno):
     if isinstance(fecha_ingreso, str):
         fecha_formateada = datetime.fromisoformat(fecha_ingreso)
     else:
-        fecha_formateada = fecha_ingreso  # Timestamp → datetime
+        fecha_formateada = fecha_ingreso  # Timestamp a datetime
     fecha_formateada = fecha_formateada.astimezone(ZoneInfo(TIME_ZONE)) 
 
     if fecha_formateada \
