@@ -3,11 +3,13 @@ import hashlib
 import hmac
 from numbers import Number
 from zoneinfo import ZoneInfo
+from pydantic import ValidationError
 from functions.Usuarios.auth_decorator import require_auth
 from functions.Usuarios.auth_decorator_IAM import require_auth_schedule
 from functions.Cuotas.pagos import establecer_pago
 from functions.Cuotas.utilidades_cuotas import get_monto_cuota, ordenar_datos_cuotas
 from functions.Disciplinas.disciplinas import getAlumnosPorDisciplina, ordenar_datos_disciplina
+from functions.Cuotas.query_cuotas_classes import CuotasQuery
 from functions.Otros.utilidades_datetime import MESES_REVRSD, TIME_ZONE
 from firebase_init import db  # Firebase con base de datos inicializada
 from dotenv import load_dotenv
@@ -38,7 +40,6 @@ def cuotas(request):
 #@require_auth(required_roles=['alumno', 'profesor', 'admin'])
 def getCuotas(request, uid=None, role=None):
     try:
-        #axiox no permite GETs con datos en JSON, por lo que es necesario usar los args.
         data = request.args
         cuota_id = data.get('cuota_id')
 
@@ -51,8 +52,27 @@ def getCuotas(request, uid=None, role=None):
         #EL DIA DE RECARGO ES REQUERIDO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if 'dia_recargo' not in data:
             return {'error': DIA_RECARGO_ERR_MSG}, 400
+        if 'limite' not in data:
+            return {'error': "No se ha puesto un limite a la cantidad de cuotas a traer."}, 400
         
-        recargo_day = int(data.get('dia_recargo'))
+        try:
+            recargo_day = int(data.get('dia_recargo'))
+            #Limite de cuotas a retirar (MAX DE 500)
+            limite = int(data.get('limite'))
+        except ValueError as e:
+            return {'error': "El dia de recargo y/o el limite no son numeros enteros."}, 400
+        
+        try: 
+            validation_args = {
+                'dia_recargo': recargo_day,
+                'dniAlumno': dni_alumno,
+                'idDisciplina': id_disciplina,
+                'cuota_id': cuota_id,
+                'limite_query': limite
+            }
+            CuotasQuery.model_validate(validation_args)
+        except ValidationError as e:
+            return {'error': e.errors(include_url=False, include_context=False)}, 400
 
         if 'cuota_id' not in data:
             cuotas = []
@@ -64,6 +84,8 @@ def getCuotas(request, uid=None, role=None):
 
             if dni_alumno is not None:
                 cuotas_ref = cuotas_ref.where(filter=FieldFilter("dniAlumno", "==", dni_alumno))
+
+            cuotas_ref = cuotas_ref.limit(limite)
 
             for doc in cuotas_ref.stream():
                 cuota_data = doc.to_dict()
@@ -208,7 +230,7 @@ def deleteCuotas(request, uid=None, role=None):
 
 
 
-@require_auth(required_roles=['alumno', 'admin'])
+#@require_auth(required_roles=['alumno', 'admin'])
 def getCuotasDNIAlumno(request, uid=None, role=None):
     try:
         #axiox no permite GETs con datos en JSON, por lo que es necesario usar los args.
@@ -220,10 +242,30 @@ def getCuotasDNIAlumno(request, uid=None, role=None):
             return {'error': DIA_RECARGO_ERR_MSG}, 400
         if 'dniAlumno' not in data:
             return {'error': 'El DNI del alumno es requerido.'}, 400
+        if 'limite' not in data:
+            return {'error': "No se ha puesto un limite a la cantidad de cuotas a traer."}, 400
+        
+        try:
+            recargo_day = int(data.get('dia_recargo'))
+            limite = int(data.get('limite'))
+        except ValueError as e:
+            return {'error': "El dia de recargo no es un numero entero."}, 400
         
         cuota_id = data.get('cuota_id')
         #DNI del alumno para pedir las cuotas de este solamente
         dni_alumno = data.get('dniAlumno')
+
+        try: 
+            validation_args = {
+                'dia_recargo': recargo_day,
+                'dniAlumno': dni_alumno,
+                'idDisciplina': None,
+                'cuota_id': cuota_id,
+                'limite_query': limite
+            }
+            CuotasQuery.model_validate(validation_args)
+        except ValidationError as e:
+            return {'error': e.errors(include_url=False, include_context=False)}, 400
         
         usuario_ref = db.collection('usuarios').document(dni_alumno)
         usuario_doc = usuario_ref.get()
@@ -233,12 +275,12 @@ def getCuotasDNIAlumno(request, uid=None, role=None):
         if usuario_doc.to_dict().get('user_uid') != uid:
             return {'error': 'No puede acceder a esta información.'}, 401
         
-        recargo_day = int(data.get('dia_recargo'))
 
         if not data or 'cuota_id' not in data:
             cuotas = []
             cuotas_ref = db.collection('cuotas')
             cuotas_ref = cuotas_ref.where(filter=FieldFilter("dniAlumno", "==", dni_alumno))
+            cuotas_ref = cuotas_ref.limit(limite)
 
             for doc in cuotas_ref.stream():
                 cuota_data = doc.to_dict()
@@ -355,7 +397,9 @@ def pagar_cuotas_manualmente(request_cuotas_id, uid=None, role=None):
         lista_cuotas_id = data.get("lista_cuotas", [])
 
         if not isinstance(lista_cuotas_id, list) or not lista_cuotas_id:
-            return {'error': "El campo de \"lista_cuotas\" no es una lista o no está definido."}
+            return {'error': "El campo de \"lista_cuotas\" no es una lista o no está definido."}, 400
+        if lista_cuotas_id.count > 100:
+            return {'error': "¡Se están intentando pagar muchas cuotas a la vez!."}, 400
 
         for dict_cuota in lista_cuotas_id:
             for id_cuota, valor_pagar in dict_cuota.items():
@@ -477,41 +521,6 @@ def crear_cuotas_mes(request, uid=None, role=None):
     except Exception as e:
         return {'error': str(e)}, 500
 
-
-""" #@require_auth(required_roles=['admin'])
-def eliminar_cuotas_mes(request, uid=None, role=None):
-    try:
-        data = request.get_json(silent=True) or {}
-
-        if 'anio' not in data:
-            return {'error': 'Se requiere espe'}, 400
-        if 'mes' not in data:
-            return {'error': 'Se requiere especificar el mes (rango 1 al 12) o indicar "0" para borrar todas las cuotas del año.'}, 400
-
-        #Cliente y el Bulk Writer
-        client = firestore.Client()
-        bulk = client.bulk_writer()
-
-        #Se traen solo las cuotas necesarias (las del mismo mes del año actual que el del
-        #año resultante de la resta entre el actual y la variable "anios_a_restar").
-        current_month = datetime.now(ZoneInfo(TIME_ZONE)).month
-        current_month_str = MESES_REVRSD[current_month].capitalize()
-        anio_borrado = datetime.now(ZoneInfo(TIME_ZONE)).year - int(data.get("anios_a_restar"))
-        
-        str_filtro = f"{current_month_str}/{anio_borrado}"
-        cant_borrada = 0
-
-        cuotas_ref = db.collection('cuotas').where(filter=FieldFilter("concepto", "==", str_filtro))
-
-        for doc in cuotas_ref.stream():
-            db.collection("cuotas").document(doc.id).delete()
-            cant_borrada += 1
-
-        return f"Se borraron correctamente {cant_borrada} cuotas.", 200
-
-
-    except Exception as e:
-        return {'error': str(e)}, 500 """
 
 @require_auth_schedule(required_roles=['scheduler'], audience="https://southamerica-east1-snappy-striker-455715-q2.cloudfunctions.net/main/eliminar-cuotas-forma-automatica")
 def eliminar_cuotas_forma_automatica(request, uid=None, role=None):

@@ -1,7 +1,9 @@
 """ Un archivo que contiene utilidades para los archivos de la carpeta de Cuotas
 (existe mas que nada para evitar un error de dependencia circular) """
-from numbers import Number
+import os
+from email.message import EmailMessage
 from collections import OrderedDict
+import smtplib
 from firebase_init import db  # Firebase con base de datos inicializada
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -13,7 +15,6 @@ from functions.Otros.utilidades_datetime import (
 )
 
 
-
 METODOS_PAGO = {
     "account_money": "Dinero de cuenta",
     "ticket": "Ticket",
@@ -22,6 +23,8 @@ METODOS_PAGO = {
     "debit_card": "Tarjet. Debito",
     "prepaid_card": "Tarjet. Prepaga"
 }
+DISCELIMINADA = "Disc. Eliminada"
+
 
 def ordenar_datos_cuotas(data_cuota, precio_cuota, cuota_id, disciplina_id=None):   
     """Ordena los datos de las cuotas en un formato especifico.
@@ -46,7 +49,7 @@ def ordenar_datos_cuotas(data_cuota, precio_cuota, cuota_id, disciplina_id=None)
     
     id_disciplina = disciplina_id if disciplina_id is not None else data_cuota.get("idDisciplina")
 
-    if id_disciplina == "Disc. Eliminada":
+    if id_disciplina == DISCELIMINADA:
         cuota_data["nombreDisciplina"] = id_disciplina
         return cuota_data
     
@@ -77,7 +80,7 @@ def get_monto_cuota(cuota_id, recargo_day):
         return cuota_doc.get("montoPagado")
 
     disciplina_id = cuota_doc.get("idDisciplina")
-    if disciplina_id == "Disc. Eliminada":
+    if disciplina_id == DISCELIMINADA:
         return cuota_doc.get("montoPagado")
 
     if not disciplina_id:
@@ -207,9 +210,53 @@ def marcar_cuotas_eliminacion_disciplina(id_disciplina):
 
         for doc in cuotas_query.stream():
             ref = client.collection('cuotas').document(doc.id)
-            bulk.update(ref, {"idDisciplina": "Disc. Eliminada"})
+            bulk.update(ref, {"idDisciplina": DISCELIMINADA})
         
         bulk.close()
+
+    except Exception as e:
+        raise RuntimeError(e)
+
+
+def enviar_email_pago_cuota(cuota_id, cant_pagada):
+    try:
+        cuota_ref = db.collection('cuotas').document(cuota_id) 
+        cuota_data = cuota_ref.get().to_dict()
+
+        MAIL_USER = os.getenv("MAIL_USER")
+        MAIL_PASS = os.getenv("MAIL_PASS")
+        MAIL_FROM = os.getenv("MAIL_FROM")
+
+        user_ref = db.collection('usuarios').document(cuota_data.get('dniAlumno'))
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+            raise RuntimeError('No se encontro el usuario especificado.')
+        user_data = user_doc.to_dict()
+
+        disciplina_ref = db.collection('usuarios').document(cuota_data.get('dniAlumno'))
+        disciplina_doc = disciplina_ref.get()
+        if not disciplina_doc.exists:
+            raise RuntimeError('No se encontro la disciplina especificada.')    
+        disciplina_data = disciplina_doc.to_dict()
+
+        mensaje_email = EmailMessage()
+        mensaje_email['Subject'] = f"Comprobante de su pago de cuota: {cuota_data.get('concepto')}."
+        mensaje_email['From'] = MAIL_FROM
+        mensaje_email['To'] = user_data.get('email') 
+        mensaje_email.set_content(f"""
+            ¡Hola {user_data.get('nombre')} {user_data.get('apellido')}!
+
+            Gracias por pagar tu cuota "{cuota_data.get('concepto')}" de la disciplina {disciplina_data.get('nombre')}. Abonaste un total de: {cant_pagada} pesos.
+            Este e-mail se mandó para que te quede como comprobante propio en caso de que lo necesites. 
+            SIN EMBARGO: no puede ser usado como comprobante de pago oficial, el mismo debe ser descargado al finalizar el pago.
+
+            ¡Que tenga un buen día! 
+            Abdance: Academia de Estilos.
+        """)
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+                smtp.login(MAIL_USER, MAIL_PASS)
+                smtp.send_message(mensaje_email)
 
     except Exception as e:
         raise RuntimeError(e)

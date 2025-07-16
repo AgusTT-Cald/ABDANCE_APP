@@ -1,10 +1,12 @@
 import mercadopago
 import os
 from datetime import datetime
+from pydantic import ValidationError
 from firebase_init import db  # Firebase con base de datos inicializada
 from functions.Usuarios.auth_decorator import require_auth
+from functions.Cuotas.utilidades_cuotas import get_monto_cuota, ordenar_datos_cuotas, METODOS_PAGO, enviar_email_pago_cuota
+from functions.Cuotas.query_cuotas_classes import CuotasQuery
 from dotenv import load_dotenv
-from functions.Cuotas.utilidades_cuotas import get_monto_cuota, ordenar_datos_cuotas, METODOS_PAGO
 from zoneinfo import ZoneInfo
 
 
@@ -19,7 +21,20 @@ def crear_preferencia_cuota(request, uid=None, role=None):
         #Verifica que no falten datos importantes.
         if not data or 'cuota_id' not in data or 'dia_recargo' not in data:
             return {'error': 'El dia de recargo (dia_recargo) y el id de la cuota (cuota_id) son requeridos obligatoriamente.'}, 400  
-            
+        
+        try: 
+            validation_args = {
+                'dia_recargo': dia_recargo,
+                'dniAlumno': None,
+                'idDisciplina': None,
+                'cuota_id': cuota_id,
+                'limite_query': 1,
+            }
+            CuotasQuery.model_validate(validation_args)
+        except ValidationError as e:
+            return {'error': e.errors(include_url=False, include_context=False)}, 400
+
+
         cuota_ref = db.collection('cuotas').document(cuota_id)
         cuota_doc = cuota_ref.get()
         cuota_data = None
@@ -36,6 +51,11 @@ def crear_preferencia_cuota(request, uid=None, role=None):
         if not disciplina_doc.exists:
             return {'error': "Esta cuota no pertenece a ninguna disciplina."}, 500
         
+        try: 
+            precio_unitario = int(cuota_data['precio_cuota'])
+        except ValueError as e:
+            return {'error': "¡El precio de la cuota no es un entero válido!."}, 500
+
         disciplina_data = disciplina_doc.to_dict()
 
         #Luego, si todo fue bien, obtiene los datos del .env
@@ -50,7 +70,7 @@ def crear_preferencia_cuota(request, uid=None, role=None):
                 {
                     "title": f"Cuota {cuota_data['concepto']}",
                     "quantity": 1,
-                    "unit_price": int(cuota_data['precio_cuota']),
+                    "unit_price": precio_unitario,
                     "currency_id": "ARS",
                     "description": f"Cuota del mes de {cuota_data['concepto']}, para alumno con DNI: {cuota_data['dniAlumno']}, de la disciplina: {disciplina_data['nombre']}.",
                 }
@@ -104,6 +124,8 @@ def establecer_pago(data_payment):
         if cuota_ref.get().to_dict().get("estado", "").lower() == "pagada":
             raise LookupError("La cuota buscada ya está pagada.")
         
+        enviar_email_pago_cuota(id_objeto, cantidad_transaccion)
+        
         raw_date = pago.get("date_approved")
         dt = datetime.fromisoformat(raw_date)                  # crea datetime con tzinfo
         dt_local = dt.astimezone(ZoneInfo("America/Argentina/Buenos_Aires"))
@@ -118,3 +140,5 @@ def establecer_pago(data_payment):
             'metodoPago': metodo_pago_traducido,
             'montoPagado': cantidad_transaccion
         })
+    
+    return "Ok", 200
