@@ -13,15 +13,15 @@ from zoneinfo import ZoneInfo
 @require_auth(required_roles=['alumno', 'admin'])
 def crear_preferencia_cuota(request, uid=None, role=None):
     try:
-        #Primero obtiene la cuota a pagar
         data = request.get_json(silent=True) or {}
         cuota_id = data.get('cuota_id')
         dia_recargo = data.get('dia_recargo')
 
-        #Verifica que no falten datos importantes.
+        #Verifica que no falten datos.
         if not data or 'cuota_id' not in data or 'dia_recargo' not in data:
             return {'error': 'El dia de recargo (dia_recargo) y el id de la cuota (cuota_id) son requeridos obligatoriamente.'}, 400  
         
+        #Valida los datos de entrada
         try: 
             validation_args = {
                 'dia_recargo': dia_recargo,
@@ -41,9 +41,11 @@ def crear_preferencia_cuota(request, uid=None, role=None):
 
         if cuota_doc.exists: 
             cuota_data = cuota_doc.to_dict()
-            precio_cuota = get_monto_cuota(cuota_id, dia_recargo)
+            data_tuple = get_monto_cuota(cuota_id, dia_recargo)
+            precio_cuota = data_tuple[0]
+            tipo_monto = data_tuple[1]
 
-            cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, cuota_doc.id)
+            cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, cuota_doc.id, tipo_recargo=tipo_monto)
         else:
             return {'error': "Cuota no encontrada."}, 404
         
@@ -51,6 +53,7 @@ def crear_preferencia_cuota(request, uid=None, role=None):
         if not disciplina_doc.exists:
             return {'error': "Esta cuota no pertenece a ninguna disciplina."}, 500
         
+        #Conversión de del precio a entero si es que hace falta.
         try: 
             precio_unitario = int(cuota_data['precio_cuota'])
         except ValueError as e:
@@ -140,5 +143,3 @@ def establecer_pago(data_payment):
             'metodoPago': metodo_pago_traducido,
             'montoPagado': cantidad_transaccion
         })
-    
-    return "Ok", 200

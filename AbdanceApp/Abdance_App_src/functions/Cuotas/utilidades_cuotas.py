@@ -26,7 +26,7 @@ METODOS_PAGO = {
 DISCELIMINADA = "Disc. Eliminada"
 
 
-def ordenar_datos_cuotas(data_cuota, precio_cuota, cuota_id, disciplina_id=None):   
+def ordenar_datos_cuotas(data_cuota, precio_cuota, cuota_id, tipo_recargo, disciplina_id=None):   
     """Ordena los datos de las cuotas en un formato especifico.
 
     Args:
@@ -47,6 +47,8 @@ def ordenar_datos_cuotas(data_cuota, precio_cuota, cuota_id, disciplina_id=None)
     cuota_data["metodoPago"] = data_cuota.get("metodoPago")
     cuota_data["precio_cuota"] = precio_cuota
     
+    #Campos extra que no están en FireStore:
+    cuota_data["tipoMonto"] = tipo_recargo
     id_disciplina = disciplina_id if disciplina_id is not None else data_cuota.get("idDisciplina")
 
     if id_disciplina == DISCELIMINADA:
@@ -60,36 +62,36 @@ def ordenar_datos_cuotas(data_cuota, precio_cuota, cuota_id, disciplina_id=None)
 
 
 def get_monto_cuota(cuota_id, recargo_day):
-    """Obtiene el precio de una cuota especifica, usando un dia de recargo especifico.
+    """Obtiene el monto y el tipo de monto de una cuota especifica, usando un dia de recargo especifico.
 
     Args:
         cuota_id (String): ID de la cuota.
         recargo_day (Integer): Numero entero del dia de recargo.
 
     Returns:
-        Number: Retorna el monto de la cuota o lanza un error si algo va mal.
+        Tuple ([Number, String]): Retorna el monto de la cuota y el tipo de monto o lanza un error si algo va mal.
     """
     cuota_ref = db.collection('cuotas').document(cuota_id)
     cuota_doc = cuota_ref.get()
     if not cuota_doc.exists:
-        return {'error':'Una de las cuotas no fue encontrada.'}, 404
+        raise RuntimeError("Una de las cuotas no fue encontrada.")
     
     #Retorno temprano si la cuota ya se pagó.
     cuota_data = cuota_doc.to_dict()
     if cuota_doc.get("estado").lower() == "pagada" or cuota_doc.get("montoPagado") != 0:
-        return cuota_doc.get("montoPagado")
+        return cuota_doc.get("montoPagado"), "-"
 
     disciplina_id = cuota_doc.get("idDisciplina")
     if disciplina_id == DISCELIMINADA:
-        return cuota_doc.get("montoPagado")
+        return cuota_doc.get("montoPagado"), "-"
 
     if not disciplina_id:
-        return {'error':'Una de las cuotas no tiene disciplina asignada.'}, 400
+        raise RuntimeError("Una de las cuotas no tiene una disciplina asignada")
     
     disciplina_ref = db.collection("disciplinas").document(disciplina_id)
     disciplina_doc = disciplina_ref.get()
     if not disciplina_doc.exists:
-        return {'error':'Una de las disciplinas no fue encontrada o no existe.'}, 400
+        raise RuntimeError("Una de las disciplinas no fue encontrada.")
     
     precios = disciplina_doc.to_dict().get("precios", {})
     
@@ -103,7 +105,7 @@ def determinar_monto(precios, cuota_data, recargo_day):
 
     #Retorno de matricula
     if concepto_cuota == "matricula":
-        return precios.get("matriculaAnual")
+        return precios.get("matriculaAnual"), "Matricula"
     
     #Calculo y Retorno de montoRecargo
     hoy = datetime.now(ZoneInfo(TIME_ZONE))
@@ -123,8 +125,9 @@ def determinar_monto(precios, cuota_data, recargo_day):
         else:
             pago_dt = fecha_pago_cuota
 
+    #Retorno de precio de MontoRecargo
     if (estado_cuota != "pagada" and en_recargo(hoy)) or (pago_dt and en_recargo(pago_dt)):
-        return precios.get("montoRecargo")
+        return precios.get("montoRecargo"), "Recargo"
     
     dni_alumno: str = cuota_data.get("dniAlumno")
     #Comprobación de alumno eliminado
@@ -133,10 +136,10 @@ def determinar_monto(precios, cuota_data, recargo_day):
     
     #Retorno de monto de alumno ingresado el 15 o despues.
     if es_monto_nuevo_15(concepto_cuota, dni_alumno):
-        return precios.get("montoNuevo15")  
+        return precios.get("montoNuevo15"), "Nuevo 15"  
     
     #Retorno de montoBase
-    return precios.get("montoBase")
+    return precios.get("montoBase"), "Base"
 
 
 def es_monto_nuevo_15(concepto_cuota, dni_alumno):
@@ -146,17 +149,17 @@ def es_monto_nuevo_15(concepto_cuota, dni_alumno):
         anio = int(anio_str.strip())                    
     except Exception:
         mes = anio = None
-        raise ValueError
+        raise ValueError("El concepto no está en su formato correcto.")
     
 
     usuario_ref = db.collection('usuarios').document(dni_alumno)
     usuario_doc = usuario_ref.get()
     if not usuario_doc.exists:
-        return {'error':'La cuota no tiene un alumno designado.'}, 500
+        raise RuntimeError("¡Una de las cuotas no tiene alumno asignado!")
     
     fecha_ingreso = usuario_doc.to_dict().get("fechaInscripcion").astimezone(ZoneInfo(TIME_ZONE))
     if not fecha_ingreso:
-        return {'error':'El alumno no tiene una fecha de ingreso.'}, 500
+        raise RuntimeError("¡Uno de los alumnos no tiene fecha de ingreso!")
     
     if isinstance(fecha_ingreso, str):
         fecha_formateada = datetime.fromisoformat(fecha_ingreso)
@@ -260,3 +263,7 @@ def enviar_email_pago_cuota(cuota_id, cant_pagada):
 
     except Exception as e:
         raise RuntimeError(e)
+
+
+
+    

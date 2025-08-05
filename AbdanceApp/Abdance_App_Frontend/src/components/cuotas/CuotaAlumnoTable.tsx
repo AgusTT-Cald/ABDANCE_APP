@@ -7,19 +7,8 @@ import { useAuthFetch } from "../../hooks/useAuthFetch";
 import { Dialog, DialogTitle } from "@headlessui/react";
 import icon from '../../../public/dance.ico'
 import MensajeAlerta from "../MensajeAlerta";
+import { Cuota } from "./Cuota";
 
-
-type Cuota = {
-    concepto: string;
-    dniAlumno: string;
-    estado: string;
-    fechaPago: string;
-    id: string;
-    idDisciplina: string;
-    metodoPago: string;
-    precio_cuota: string;
-    nombreDisciplina: string;
-};
 
 
 // Tabla de cuotas para Alumno
@@ -32,7 +21,7 @@ export function CuotaAlumnoTable() {
   const [openModal, setOpenModal] = useState(false);
   
   const endpoint = dniAlumno
-    ? `${endpointUrl}/cuotas/alumno?dia_recargo=11&dniAlumno=${dniAlumno}&reload=${reload}`
+    ? `${endpointUrl}/cuotas/alumno?dia_recargo=11&dniAlumno=${dniAlumno}&limite=100&reload=${reload}`
     : null;
   const { data: cuotas, loading, error } = useAuthFetch<Cuota[]>(endpoint ?? '');
 
@@ -106,6 +95,7 @@ export function CuotaAlumnoTable() {
                 <th className={tableHeaderStyle + " w-[50px]"}>Disciplina</th>
                 <th className={tableHeaderStyle + " w-[60px]"}>Metodo de Pago</th>
                 <th className={tableHeaderStyle + " w-[50px]"}>Cantidad</th>
+                <th className={tableHeaderStyle + " w-[50px]"}>Tipo Monto</th>
               </tr>
             </thead>
             <tbody>
@@ -122,6 +112,7 @@ export function CuotaAlumnoTable() {
                   <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{c.nombreDisciplina}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{c.metodoPago?.trim() == "" ? "-" : c.metodoPago}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[50px]`}>${c.precio_cuota}</td>
+                  <td className={`${tableDatacellStyle} truncate max-w-[85px]`}>{c.tipoMonto}</td>
                 </tr>
               ))}
             </tbody>
@@ -131,21 +122,24 @@ export function CuotaAlumnoTable() {
 
         <div className="block md:hidden flex flex-wrap mt-10 justify-between mb-4 mx-2">
             {cuotas?.map(c => (
-                <div key={c.id} className="relative flex w-50 flex-col rounded-xl bg-white bg-clip-border text-gray-700 shadow-md mt-3 mx-1">
+                <div key={c.id} className="relative flex w-50 flex-col rounded-xl bg-gradient-to-t from-rose-200 bg-slate-300 bg-clip-border text-gray-700 shadow-md mt-3 mx-1">
                     <div className="p-6">
-                        <h5 className="mb-2 block font-sans text-xl font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased">
+                        <h5 className="mb-2 block font-sans text-xl font-semibold leading-snug tracking-normal text-gray-900 antialiased">
                         {c.concepto}
                         </h5>
-                        <h6 className="mb-2 block font-sans text-base font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased capitalize">
+                        <h6 className="mb-2 block font-sans text-base font-semibold leading-snug tracking-normal text-gray-900 antialiased capitalize">
                         {c.nombreDisciplina}
                         </h6>
-                        <p className="block font-sans text-base leading-relaxed text-inherit antialiased">
+                        <p className="block font-sans text-base leading-relaxed text-gray-900 antialiased">
                         <b>A pagar:</b> ${c.precio_cuota}
                         </p>
-                        <p className="capitalize block font-sans text-base leading-relaxed text-inherit antialiased">
+                        <p className="block font-sans text-base leading-relaxed text-gray-900 antialiased">
+                        <b>Tipo de Monto:</b> {c.tipoMonto}
+                        </p>
+                        <p className="capitalize block font-sans text-base leading-relaxed text-gray-900 antialiased">
                         <b>Estado:</b> {c.estado}
                         </p>
-                        <p className="capitalize block font-sans text-base leading-relaxed text-inherit antialiased">
+                        <p className="capitalize block font-sans text-base leading-relaxed text-gray-900 antialiased">
                         <b>Fecha de Pago:</b> {c.fechaPago?.trim() == "" ? "-" : generalDateParsing(c.fechaPago)}
                         </p>
                     </div>
@@ -160,7 +154,7 @@ export function CuotaAlumnoTable() {
         </div>
         <p className="md:block hidden italic text-lg font-medium text-gray-200 md:text-gray-800">Presione en una cuota sin pagar para pagarla.</p>
 
-        {/* Modal de confirmación e integración de MercadoPago */}
+        {/* Modal de MercadoPago */}
         {selectedCuota && (
           <Dialog open={openModal} onClose={closeModal} className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="bg-gradient-to-t from-indigo-200 via-indigo-400 to-indigo-600 p-6 rounded-lg shadow-lg max-w-md w-full text-black max-h-[90vh] overflow-y-auto">
@@ -176,6 +170,7 @@ export function CuotaAlumnoTable() {
                         <div className="mt-2 text-gray-600 mb-5">
                           <p><strong>DNI: </strong>{selectedCuota.dniAlumno}</p>
                           <p><strong>Precio: </strong>${selectedCuota.precio_cuota}</p>
+                          <p><strong>Tipo de Monto: </strong>{selectedCuota.tipoMonto}</p>
                         </div>
                         <p className="mt-2 text-sm text-gray-500 italic my-5">Se guardará la fecha de pago como el dia y hora actuales.</p>
                         <div className="flex space-x-2 mb-4 justify-center">
@@ -185,7 +180,7 @@ export function CuotaAlumnoTable() {
                         <h2
                           className="text-base font-medium tracking-tighter text-gray-600 lg:text-1xl mt-5"
                         >
-                          Pagarás mediante Mercado Pago, podrás usar tarjetas de debito y credito además de tu dinero de cuenta.
+                          Pagarás mediante Mercado Pago, podrás usar otras tarjetas de debito y credito además de tu dinero y las tarjetas que tengas en tu cuenta.
                         </h2>
                     </div>
                 </div>

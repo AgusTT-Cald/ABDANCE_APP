@@ -28,7 +28,7 @@ from functions.Cuotas.pagos import crear_preferencia_cuota
 from functions.Usuarios.auth_users import register_student
 from functions.Usuarios.usuarios import usuarios
 from functions.Eventos.eventos import eventos
-from functions.Disciplinas.disciplinas import disciplinas, gestionarAlumnosDisciplina
+from functions.Disciplinas.disciplinas import disciplinas, gestionarAlumnosDisciplina, datos_necesarios_disciplinas
 from functions.Eventos.entradas import entradas
 from functions.Eventos.crear_preferencia import crear_preferencia
 
@@ -73,6 +73,8 @@ def main(request):
         return apply_cors(cuotas(request))
     elif path == '/cuotas/alumno':
         return apply_cors(getCuotasDNIAlumno(request))
+    elif path == '/cuotas/datos-disciplina':
+        return apply_cors(datos_necesarios_disciplinas(request))
     elif path == "/crear_preferencia_cuota":
         return apply_cors(crear_preferencia_cuota(request) )
     elif path == "/pagar_cuota":

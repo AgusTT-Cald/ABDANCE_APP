@@ -90,8 +90,10 @@ def getCuotas(request, uid=None, role=None):
             for doc in cuotas_ref.stream():
                 cuota_data = doc.to_dict()
             
-                precio_cuota = get_monto_cuota(doc.id, recargo_day)
-                cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, doc.id, disciplina_id=id_disciplina)
+                data_tuple = get_monto_cuota(doc.id, recargo_day)
+                precio_cuota = data_tuple[0]
+                tipo_monto = data_tuple[1]
+                cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, doc.id, disciplina_id=id_disciplina, tipo_recargo=tipo_monto)
 
                 cuotas.append(cuota_data)
 
@@ -102,9 +104,12 @@ def getCuotas(request, uid=None, role=None):
 
         if cuota_doc.exists: 
             cuota_data = cuota_doc.to_dict()
-            precio_cuota = get_monto_cuota(cuota_id, recargo_day)
 
-            cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, cuota_doc.id)
+            data_tuple = get_monto_cuota(cuota_id, recargo_day)
+            precio_cuota = data_tuple[0]
+            tipo_monto = data_tuple[1]
+
+            cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, cuota_doc.id, tipo_recargo=tipo_monto)
 
             return cuota_data, 200
         else:
@@ -285,8 +290,11 @@ def getCuotasDNIAlumno(request, uid=None, role=None):
             for doc in cuotas_ref.stream():
                 cuota_data = doc.to_dict()
             
-                precio_cuota = get_monto_cuota(doc.id, recargo_day)
-                cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, doc.id)
+                data_tuple = get_monto_cuota(doc.id, recargo_day)
+                precio_cuota = data_tuple[0]
+                tipo_monto = data_tuple[1]
+
+                cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, doc.id, tipo_recargo=tipo_monto)
 
                 cuotas.append(cuota_data)
 
@@ -297,9 +305,12 @@ def getCuotasDNIAlumno(request, uid=None, role=None):
 
         if cuota_doc.exists: 
             cuota_data = cuota_doc.to_dict()
-            precio_cuota = get_monto_cuota(cuota_id, recargo_day)
+            
+            data_tuple = get_monto_cuota(cuota_id, recargo_day)
+            precio_cuota = data_tuple[0]
+            tipo_monto = data_tuple[1]
 
-            cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, cuota_doc.id)
+            cuota_data = ordenar_datos_cuotas(cuota_data, precio_cuota, cuota_doc.id, tipo_recargo=tipo_monto)
 
             return cuota_data, 200
         else:
@@ -390,7 +401,7 @@ def pagar_cuota(request):
         return {'error': str(e)}, 500
 
 
-@require_auth(required_roles=['admin'])
+#@require_auth(required_roles=['admin'])
 def pagar_cuotas_manualmente(request_cuotas_id, uid=None, role=None):
     try:
         data = request_cuotas_id.get_json(silent=True) or {}
@@ -398,7 +409,7 @@ def pagar_cuotas_manualmente(request_cuotas_id, uid=None, role=None):
 
         if not isinstance(lista_cuotas_id, list) or not lista_cuotas_id:
             return {'error': "El campo de \"lista_cuotas\" no es una lista o no está definido."}, 400
-        if lista_cuotas_id.count > 100:
+        if len(lista_cuotas_id) > 100:
             return {'error': "¡Se están intentando pagar muchas cuotas a la vez!."}, 400
 
         for dict_cuota in lista_cuotas_id:

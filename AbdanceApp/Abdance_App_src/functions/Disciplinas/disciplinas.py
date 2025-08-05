@@ -280,3 +280,24 @@ def gestionarAlumnosDisciplina(request, uid=None, role=None):
 
     except Exception as e:
         return {'error': str(e)}, 500
+
+
+"Agus: Agregué esta función para no usar el get que me trae muchisimos datos que no necesito."
+#@require_auth(required_roles=['admin'])
+def datos_necesarios_disciplinas(request, uid=None, role=None):
+    try:
+        disciplinas = []
+        disciplinas_ref = db.collection('disciplinas')
+        
+        for doc in disciplinas_ref.stream():
+            data_disciplina = doc.to_dict()
+            disciplina_data = {}
+            disciplina_data["nombre"] = data_disciplina.get("nombre")
+            disciplina_data["id"] = data_disciplina.get("id")
+            
+            disciplinas.append(disciplina_data)
+            
+        return disciplinas, 200
+    
+    except Exception as e:
+        return {'error': e}, 500
