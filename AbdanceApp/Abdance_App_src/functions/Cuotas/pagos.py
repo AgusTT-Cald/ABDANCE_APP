@@ -20,7 +20,11 @@ def crear_preferencia_cuota(request, uid=None, role=None):
         #Verifica que no falten datos.
         if not data or 'cuota_id' not in data or 'dia_recargo' not in data:
             return {'error': 'El dia de recargo (dia_recargo) y el id de la cuota (cuota_id) son requeridos obligatoriamente.'}, 400  
-        
+
+        load_dotenv()
+        # DIA_RECARGO = os.getenv("DIA_RECARGO")
+        dia_recargo = 11  #int(DIA_RECARGO)
+
         #Valida los datos de entrada
         try: 
             validation_args = {
@@ -62,7 +66,6 @@ def crear_preferencia_cuota(request, uid=None, role=None):
         disciplina_data = disciplina_doc.to_dict()
 
         #Luego, si todo fue bien, obtiene los datos del .env
-        load_dotenv()
         PROD_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN_TEST")
 
         mercado_pago_sdk = mercadopago.SDK(str(PROD_ACCESS_TOKEN))

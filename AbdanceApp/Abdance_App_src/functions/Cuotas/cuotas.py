@@ -61,7 +61,11 @@ def getCuotas(request, uid=None, role=None):
             limite = int(data.get('limite'))
         except ValueError as e:
             return {'error': "El dia de recargo y/o el limite no son numeros enteros."}, 400
-        
+
+        # load_dotenv()
+        # DIA_RECARGO = os.getenv("DIA_RECARGO")
+        recargo_day = 11  #int(DIA_RECARGO)
+                
         try: 
             validation_args = {
                 'dia_recargo': recargo_day,
@@ -259,6 +263,9 @@ def getCuotasDNIAlumno(request, uid=None, role=None):
         cuota_id = data.get('cuota_id')
         #DNI del alumno para pedir las cuotas de este solamente
         dni_alumno = data.get('dniAlumno')
+        # load_dotenv()
+        # DIA_RECARGO = os.getenv("DIA_RECARGO")
+        recargo_day = 11  #int(DIA_RECARGO)
 
         try: 
             validation_args = {

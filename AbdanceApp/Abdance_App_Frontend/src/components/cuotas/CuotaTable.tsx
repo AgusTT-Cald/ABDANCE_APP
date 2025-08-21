@@ -152,25 +152,25 @@ export function CuotaAdminTable() {
   const endpointUrl = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token")!;
 
-  // Filtros
+  //Filtros
   const [dniFilter, setDniFilter] = useState("");
   const [disciplinaFilter, setDisciplinaFilter] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("");
 
-  // Datos de disciplina para el select
+  //Datos de disciplina para el select
   const [disciplinas, setDisciplinas] = useState<{ id:string; nombre:string }[]>([]);
   const estados = ["Pagado", "Pendiente"];
 
-  // Resultados de cuotas
+  //Resultados de cuotas
   const [cuotas, setCuotas] = useState<Cuota[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string|null>(null);
 
-  // Modal de pago
+  //Modal de pago
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
 
-  // Cargar lista de disciplinas al montar
+  //Cargar lista de disciplinas al montar
   useEffect(() => {
     fetch(`${endpointUrl}/cuotas/datos-disciplina`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -180,7 +180,7 @@ export function CuotaAdminTable() {
       .catch(console.error);
   }, []);
 
-  // Construir y ejecutar fetch de cuotas
+  //Construir y ejecutar fetch de cuotas
   const handleBuscar = async () => {
     setLoading(true);
     setError(null);

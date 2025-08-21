@@ -251,7 +251,7 @@ def enviar_email_pago_cuota(cuota_id, cant_pagada):
 
             Gracias por pagar tu cuota "{cuota_data.get('concepto')}" de la disciplina {disciplina_data.get('nombre')}. Abonaste un total de: {cant_pagada} pesos.
             Este e-mail se mandó para que te quede como comprobante propio en caso de que lo necesites. 
-            SIN EMBARGO: no puede ser usado como comprobante de pago oficial, el mismo debe ser descargado al finalizar el pago.
+            (SIN EMBARGO: no puede ser usado como comprobante de pago oficial, el mismo debe ser descargado al finalizar el pago.)
 
             ¡Que tenga un buen día! 
             Abdance: Academia de Estilos.
@@ -263,7 +263,3 @@ def enviar_email_pago_cuota(cuota_id, cant_pagada):
 
     except Exception as e:
         raise RuntimeError(e)
-
-
-
-    
