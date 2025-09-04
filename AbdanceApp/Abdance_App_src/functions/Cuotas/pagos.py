@@ -6,6 +6,7 @@ from firebase_init import db  # Firebase con base de datos inicializada
 from functions.Usuarios.auth_decorator import require_auth
 from functions.Cuotas.utilidades_cuotas import get_monto_cuota, ordenar_datos_cuotas, METODOS_PAGO, enviar_email_pago_cuota
 from functions.Cuotas.query_cuotas_classes import CuotasQuery
+from functions.Estadisticas.estadisticas import incrementar_estadistica_anio, incrementar_estadistica_mes
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
 
@@ -133,8 +134,10 @@ def establecer_pago(data_payment):
         enviar_email_pago_cuota(id_objeto, cantidad_transaccion)
         
         raw_date = pago.get("date_approved")
-        dt = datetime.fromisoformat(raw_date)                  # crea datetime con tzinfo
+        dt = datetime.fromisoformat(raw_date)                  
         dt_local = dt.astimezone(ZoneInfo("America/Argentina/Buenos_Aires"))
+        incrementar_estadistica_anio(dt_local, cantidad_transaccion)
+        incrementar_estadistica_mes(dt_local, cantidad_transaccion, id_objeto)
 
         #Traducción y formateo del Metodo de Pago (para que se pueda entender)
         metodo_pago: str = pago.get('payment_type_id')
