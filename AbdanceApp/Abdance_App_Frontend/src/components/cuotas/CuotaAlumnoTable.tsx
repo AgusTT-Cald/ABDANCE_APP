@@ -108,7 +108,7 @@ export function CuotaAlumnoTable() {
                   <td className={`${tableDatacellStyle} truncate max-w-[100px] capitalize`}>{c.concepto}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[100px]`}>{c.dniAlumno}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[110px] capitalize`}>{c.estado}</td>
-                  <td className={`${tableDatacellStyle} truncate max-w-[200px]`}>{c.fechaPago?.trim() == "" ? "-" : generalDateParsing(c.fechaPago)}</td>
+                  <td className={`${tableDatacellStyle} truncate max-w-[200px]`}>{c.fechaPago?.trim() == "" ? "-" : new Date(c.fechaPago).toLocaleString("es-AR")}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{c.nombreDisciplina}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{c.metodoPago?.trim() == "" ? "-" : c.metodoPago}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[50px]`}>${c.precio_cuota}</td>

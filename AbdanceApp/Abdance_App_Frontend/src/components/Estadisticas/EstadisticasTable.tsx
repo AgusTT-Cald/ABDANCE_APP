@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { exportarYearExcel, exportarMesExcel } from './EstadisticasExporters';
 
 const monthNames = [
   'Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -15,29 +16,29 @@ export function EstadisticasTable() {
   const baseUrl = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem('token');
 
-  // 0 = ninguno, 1 = totales por año, 2 = total del mes
+  //0 = ninguno, 1 = totales por año, 2 = total del mes
   const [mode, setMode] = useState<0|1|2>(0);
-
-  // Common
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string|null>(null);
+  const [error, setError] = useState<string|null>(null);
 
-  // Form inputs
-  const [year, setYear]   = useState<number>(new Date().getFullYear());
+  //Inputs
+  const [year, setYear] = useState<number>(new Date().getFullYear());
   const [month, setMonth] = useState<number>(new Date().getMonth()+1);
 
-  // Responses
+  //Respuestas de los endpoints
   const [byYearData, setByYearData] = useState<Record<string, number>|null>(null);
   const [byMonthData, setByMonthData] = useState<{
     Detalle: { fechaPago: string; montoPagado: number; concepto: string, DNIAlumno: number }[];
     Total: number;
   }|null>(null);
 
+
   const reset = () => {
     setError(null);
     setByYearData(null);
     setByMonthData(null);
   };
+
 
   const handleFetchByYear = async () => {
     reset();
@@ -61,6 +62,7 @@ export function EstadisticasTable() {
     }
   };
 
+
   const handleFetchByMonth = async () => {
     reset();
     setLoading(true);
@@ -83,12 +85,13 @@ export function EstadisticasTable() {
     }
   };
 
+
   const tableHeaderStyle = "bg-[#fff0] text-[#fff] justify-center text-lg";
   const tableDatacellStyle = "text-blue-500 bg-white rounded-xl m-0.5 p-1";
 
+
   return (
     <div className="p-4 space-y-4">
-      {/* Modo */}
       <div className="space-x-2">
         <button
           className={`mx-1 mb-3 text-white px-4 py-2 rounded ${mode===1?'bg-blue-600 text-white':'bg-gray-200'}`}
@@ -104,7 +107,7 @@ export function EstadisticasTable() {
         </button>
       </div>
 
-      {/* Formulario */}
+      {/* Formularios */}
       {mode !== 0 && (
         <div className="flex flex-wrap gap-4 items-center justify-center">
           <div>
@@ -120,7 +123,7 @@ export function EstadisticasTable() {
             <div>
               <p className="block text-lg font-medium text-gray-200 md:text-gray-800">Mes</p>
               <select
-                className="text-gray-900 mt-1 block w-24 h-10 rounded border-gray-300 bg-pink-300 p-2"
+                className="text-gray-900 mt-1 block w-28 h-10 rounded border-gray-300 bg-pink-300 p-2"
                 value={month}
                 onChange={e => setMonth(Number(e.target.value))}
               >
@@ -139,13 +142,13 @@ export function EstadisticasTable() {
         </div>
       )}
 
-      {/* Cargando/Error */}
       {loading && <p>Cargando...</p>}
       {error   && <p className="text-red-500">Error: {error}</p>}
 
-      {/* Resultados */}
       {byYearData && (
-         <table className="table-fixed min-w-[60%] max-w-[80%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1 mx-auto">
+         <div>
+          <button className='dark:text-white' onClick={() => exportarYearExcel(year, byYearData!)}>Exportar a Excel</button>
+          <table className="table-fixed min-w-[60%] max-w-[80%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1 mx-auto">
             <thead>
             <tr className="bg-transparent">
                 <th className={tableHeaderStyle}>Mes</th>
@@ -162,11 +165,13 @@ export function EstadisticasTable() {
                 </tr>
             ))}
             </tbody>
-        </table>
+          </table>
+        </div>
       )}
 
       {byMonthData && (
         <div className="space-y-2">
+          <button className='dark:text-white' onClick={() => exportarMesExcel(year, month, byMonthData!)}>Exportar a Excel</button>
           <table className="mx-auto table-fixed min-w-[90%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1">
             <thead><tr className="bg-transparent">
               <th className={tableHeaderStyle + "w-[30px]"}>Concepto</th>
@@ -178,7 +183,7 @@ export function EstadisticasTable() {
               {byMonthData.Detalle.map((d,i) => (
                 <tr key={i} className="border-t">
                   <td className={`${tableDatacellStyle} truncate max-w-[150px] capitalize`}>{d.concepto}</td>
-                  <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{new Date(d.fechaPago).toLocaleString()}</td>
+                  <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{new Date(d.fechaPago).toLocaleString("es-AR")}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[100px] capitalize`}>{d.DNIAlumno}</td>
                   <td className={`${tableDatacellStyle} truncate max-w-[100px] capitalize`}>${d.montoPagado}</td>
                 </tr>

@@ -1,9 +1,9 @@
 import Loader from "../Loader";
 import generalDateParsing from "../../utils/generalDateParsing";
-import { useEffect, useState } from "react";
-import { Dialog, DialogTitle } from "@headlessui/react";
 import BotonCreacionCuotas from "./BotonCreacionCuotas";
 import MensajeAlerta from "../MensajeAlerta";
+import { useEffect, useState } from "react";
+import { Dialog, DialogTitle } from "@headlessui/react";
 import { Cuota } from "./Cuota";
 
 
@@ -26,7 +26,7 @@ export function PagoManualModal({
   const token = localStorage.getItem("token");
   const endpointUrl = import.meta.env.VITE_API_URL;
 
-  // Inicializar montos con los valores actuales cuando se abre el modal
+
   useEffect(() => {
     if (open) {
       const iniciales: Record<string, string> = {};
@@ -44,7 +44,6 @@ export function PagoManualModal({
   const handleConfirm = async () => {
     setLoading(true);
 
-    // Validar montos: que sean números positivos válidos
     for (const [id, montoStr] of Object.entries(montos)) {
       const num = parseFloat(montoStr);
       if (isNaN(num) || num <= 0) {
@@ -54,7 +53,7 @@ export function PagoManualModal({
       }
     }
 
-    // Armar el nuevo formato de lista_cuotas: [{id: monto}, ...]
+    //Armar el formato de la lista
     const listaCuotas = Object.entries(montos).map(([id, montoStr]) => ({
       [id]: parseFloat(montoStr),
     }));
@@ -157,20 +156,19 @@ export function CuotaAdminTable() {
   const [disciplinaFilter, setDisciplinaFilter] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("");
 
-  //Datos de disciplina para el select
   const [disciplinas, setDisciplinas] = useState<{ id:string; nombre:string }[]>([]);
   const estados = ["Pagado", "Pendiente"];
 
-  //Resultados de cuotas
   const [cuotas, setCuotas] = useState<Cuota[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string|null>(null);
 
-  //Modal de pago
+  //Para el modal de pago
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
 
-  //Cargar lista de disciplinas al montar
+
+  //Carga de lista de disciplinas
   useEffect(() => {
     fetch(`${endpointUrl}/cuotas/datos-disciplina`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -180,7 +178,8 @@ export function CuotaAdminTable() {
       .catch(console.error);
   }, []);
 
-  //Construir y ejecutar fetch de cuotas
+
+  //Fetch de las cuotas
   const handleBuscar = async () => {
     setLoading(true);
     setError(null);
@@ -193,7 +192,7 @@ export function CuotaAdminTable() {
       if (dniFilter) params.append("dniAlumno", dniFilter);
       if (disciplinaFilter) params.append("idDisciplina", disciplinaFilter);
 
-      //El estado se filtrará tras la llamada
+      //El estado se filtrará después de la llamada
       const url = `${endpointUrl}/cuotas?${params.toString()}`;
       const res = await fetch(url, {
         headers: {
@@ -219,6 +218,7 @@ export function CuotaAdminTable() {
     }
   };
 
+
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -226,9 +226,10 @@ export function CuotaAdminTable() {
       return next;
     });
   };
-  const openModal    = () => selectedIds.size && setOpen(true);
-  const closeModal   = () => setOpen(false);
-  const handleSuccess= () => handleBuscar(); // recarga mismas cuotas
+  const openModal = () => selectedIds.size && setOpen(true);
+  const closeModal = () => setOpen(false);
+  const handleSuccess = () => handleBuscar(); //Recarga las mismas cuotas
+
 
   const tableHeaderStyle = "bg-[#fff0] text-[#fff] justify-center";
   const tableDatacellStyle = "text-blue-500 bg-white rounded-xl m-0.5 p-1";
@@ -281,7 +282,7 @@ export function CuotaAdminTable() {
                   <td className={`${tableDatacellStyle} truncate capitalize`}>{c.concepto}</td>
                   <td className={`${tableDatacellStyle} truncate`}>{c.dniAlumno}</td>
                   <td className={`${tableDatacellStyle} truncate capitalize`}>{c.estado}</td>
-                  <td className={`${tableDatacellStyle} truncate`}>{c.fechaPago?.trim() == "" ? "-" : generalDateParsing(c.fechaPago)}</td>
+                  <td className={`${tableDatacellStyle} truncate`}>{c.fechaPago?.trim() == "" ? "-" : new Date(c.fechaPago).toLocaleString("es-AR")}</td>
                   <td className={`${tableDatacellStyle} truncate capitalize`}>{c.nombreDisciplina}</td>
                   <td className={`${tableDatacellStyle} truncate capitalize`}>{c.metodoPago?.trim() == "" ? "-" : c.metodoPago}</td>
                   <td className={`${tableDatacellStyle} truncate`}>${c.precio_cuota}</td>

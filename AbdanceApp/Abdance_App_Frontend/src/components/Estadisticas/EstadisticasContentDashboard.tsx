@@ -1,11 +1,5 @@
-import { ReactNode } from 'react';
 import EstadisticasTable from './EstadisticasTable';
 import '../../../public/dance.ico'
-
-
-interface Props{
-    children?: ReactNode;
-}
 
 
 export function EstadisticasContentDashboard() {

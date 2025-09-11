@@ -4,7 +4,7 @@ from datetime import datetime
 from functions.Usuarios.auth_decorator import require_auth
 from functions.Otros.utilidades_datetime import MESES_REVRSD
 from zoneinfo import ZoneInfo
-import pandas as pd
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 
 
@@ -111,7 +111,7 @@ def recomputar_almacenar_anio(year: int):
     latest_pago_dt = None
 
     #Query de todas las cuotas pagadas
-    cuotas_pagadas = db.collection('cuotas').where('estado', '==', 'pagada').stream()
+    cuotas_pagadas = db.collection('cuotas').where(filter=FieldFilter('estado', '==', 'pagada')).stream()
 
     for doc in cuotas_pagadas:
         data = doc.to_dict()
@@ -121,7 +121,7 @@ def recomputar_almacenar_anio(year: int):
         # Normalizar fecha a datetime (manejar strings y Timestamp)
         if isinstance(fecha_pago, str):
             try:
-                fecha_dt = datetime.fromisoformat(fecha_pago)
+                fecha_dt = datetime.fromisoformat(fecha_pago).astimezone(ZoneInfo("America/Argentina/Buenos_Aires"))
             except Exception:
                 #Ignora los formatos inválidos
                 continue
@@ -172,14 +172,14 @@ def recomputar_almacenar_mes(year: int, month: int):
     # Query: cuota pagada y fechaPago dentro del mes
     try:
         cuotas_query = db.collection('cuotas') \
-            .where('estado', '==', 'pagada') \
-            .where('fechaPago', '>=', start) \
-            .where('fechaPago', '<', end)
+            .where(filter=FieldFilter('estado', '==', 'pagada')) \
+            .where(filter=FieldFilter('fechaPago', '>=', start)) \
+            .where(filter=FieldFilter('fechaPago', '<', end))
         docs = list(cuotas_query.stream())
     except Exception:
         #Fallback por si algún motivo la query de arriba falla
         docs = []
-        for d in db.collection('cuotas').where('estado', '==', 'pagada').stream():
+        for d in db.collection('cuotas').where(filter=FieldFilter('estado', '==', 'pagada')).stream():
             docs.append(d)
 
     total = 0.0
@@ -193,7 +193,7 @@ def recomputar_almacenar_mes(year: int, month: int):
         #Normalizar a datetime
         if isinstance(fecha_pago, str):
             try:
-                dt = datetime.fromisoformat(fecha_pago)
+                dt = datetime.fromisoformat(fecha_pago).astimezone(ZoneInfo("America/Argentina/Buenos_Aires"))
             except Exception:
                 continue
         else:
@@ -207,11 +207,10 @@ def recomputar_almacenar_mes(year: int, month: int):
         total += monto
 
         detalle.append({
-            'fechaPago': dt.isoformat(),
+            'fechaPago': dt,
             'montoPagado': monto,
             'concepto': data.get('concepto'),
             'DNIAlumno': data.get('dniAlumno'),
-            'idCuota': doc.id
         })
 
         if (latest_pago is None) or (dt > latest_pago):
@@ -258,7 +257,6 @@ def incrementar_estadistica_mes(fechaPago: datetime, monto: float, cuota_doc_id:
     detalle_obj = {
         'fechaPago': fechaPago,
         'montoPagado': float(monto),
-        'idCuota': cuota_doc_id,
         'concepto': cuota_data.get('concepto'),
         'DNIAlumno': cuota_data.get('dniAlumno')
     }
