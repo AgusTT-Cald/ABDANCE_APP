@@ -278,6 +278,9 @@ def deleteDisciplina(request, uid=None, role=None):
         # eliminar dinámicamente todas las subcolecciones para asegurar eliminacion total
         delete_all_subcollections(disciplina_ref)
 
+        #Marcar en las cuotas que la disciplina se eliminará
+        marcar_cuotas_eliminacion_disciplina(disciplina_id)
+
         # Eliminar el documento principal
         disciplina_ref.delete()
 

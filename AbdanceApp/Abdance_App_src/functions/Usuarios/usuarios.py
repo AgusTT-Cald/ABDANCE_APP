@@ -141,7 +141,6 @@ def postUsuarios(request, uid=None, role=None):
             return {'message': 'Usuario registrado exitosamente', 'user_id': usuario.uid}, 201
         except Exception as e:
             return {'error': str(e) }, 400
-            return
 
 @require_auth(required_roles=['admin', 'profesor']) 
 def putUsuarios(request, uid=None, role=None):
