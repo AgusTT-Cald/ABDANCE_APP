@@ -30,11 +30,36 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  color: white;
+  color: #000; /* texto negro para pantallas pequeñas */
+
 }
 
 
-
+#burguer-button{
+  background-color: #0000003c;
+}
+#create-user-button{
+  background-color: var(--color-blue-600);
+  padding-inline: calc(var(--spacing) * 4);
+  border-radius: 0.25rem ;
+  font-size:0.75rem;
+  &:hover {
+        @media (hover: hover) {
+            background-color: var(--color-blue-700) /* oklch(48.8% 0.243 264.376) = #1447e6 */;
+        }
+    }
+}
+#create-disciplina-button{
+  background-color: var(--color-blue-600);
+  padding-inline: calc(var(--spacing) * 4);
+  border-radius: 0.25rem ;
+  font-size:0.75rem;
+  &:hover {
+        @media (hover: hover) {
+            background-color: var(--color-blue-700) /* oklch(48.8% 0.243 264.376) = #1447e6 */;
+        }
+    }
+}
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -62,6 +87,39 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+
+.scrollable-table {
+  max-height: 80vh;
+  overflow-y: auto;
+  scrollbar-width: thin;           /* Firefox */
+  scrollbar-color: #555 transparent; /* Firefox */
+}
+/* Headers pegajosos */
+.scrollable-table thead  {
+  position: sticky;
+  top: 0;
+  background-color:#1a0049; /* o el color que tenga tu tabla */
+  z-index: 10; /* asegura que esté sobre las filas */
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* opcional, para efecto visual */
+}
+/* Estilo para navegadores WebKit (Chrome, Edge, Safari) */
+.scrollable-table::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollable-table::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 3px;
+}
+
+.scrollable-table::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+
+/* 
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -73,7 +131,7 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
-}
+} */
 
 
 /* styles.css */

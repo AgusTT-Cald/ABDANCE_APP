@@ -104,3 +104,30 @@ def registrar_inasistencia(request,  uid=None, role=None):
         return {'message':'Inasistencia eliminada correctamente'}, 200
         
     return
+
+@require_auth(required_roles=['admin', 'profesor'])
+def eliminar_inasistencias_usuario(request, uid=None, role=None):
+    data = request.get_json(silent=True) or {}
+    dni_usuario = data.get("dni_usuario")
+
+    if not dni_usuario:
+        return {'error': 'DNI del usuario requerido'}, 400
+
+    user_ref = db.collection('usuarios').document(dni_usuario)
+    if not user_ref.get().exists:
+        return {'error': 'Usuario no encontrado'}, 404
+
+    inasistencias_ref = user_ref.collection('inasistencias')
+
+    import time
+    while True:
+        docs = list(inasistencias_ref.limit(500).stream())
+        if not docs:
+            break
+        batch = db.batch()
+        for doc in docs:
+            batch.delete(doc.reference)
+        batch.commit()
+        time.sleep(0.05)  # para evitar errores de cuota
+
+    return {'message': f'Todas las inasistencias del usuario {dni_usuario} fueron eliminadas'}, 200

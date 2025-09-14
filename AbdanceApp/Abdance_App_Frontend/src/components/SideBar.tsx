@@ -1,6 +1,6 @@
 
 
-
+import { useAuth } from "../hooks/useAuth"; 
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { NavLink } from 'react-router-dom';
@@ -27,23 +27,37 @@ export default function Sidebar() {
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const usuario = JSON.parse(localStorage.getItem('usuario') ?? '{}');
 
+    const { user } = useAuth(); // obtiene el rol del usuario logueado
+const rol = user?.rol?.toLowerCase(); // puede ser 'admin', 'profesor' o 'alumno'
+
+const visibleLinks = links.filter((link) => {
+    if (rol === "admin") return true;
+    if (rol === "profesor") {
+        return ["Inicio", "Cuotas", "Asistencias", "Usuarios", "Disciplinas"].includes(link.name);
+    }
+    if (rol === "alumno") {
+        return ["Inicio", "Cuotas", "Asistencias"].includes(link.name);
+    }
+    return false; // por defecto no se muestra nada si no hay rol
+    });
+
     return (
         <div className="flex">
         {/* Botón hamburguesa mobile */}
-        <div className={`md:hidden absolute top-4 z-50  transition-all duration-300 ${isOpen ? 'left-54' : 'left-4'}`}>
-            <button onClick={() => setIsOpen(!isOpen)}>
+        <div className={`md:hidden absolute top-4 z-50  transition-all duration-300  ${isOpen ? 'left-54' : 'left-4'}`}>
+            <button id="burguer-button" onClick={() => setIsOpen(!isOpen)}>
             <Icon icon={isOpen ? "mdi:close" : "mdi:menu"} className=" text-white text-3xl" />
             </button>
         </div>
 
         {/* Sidebar */}
         <aside
-            className={`fixed rounded-3xl w-[200px] z-40 top-0 left-0 h-auto transition-transform duration-300 ease-in-out flex justify-center 
+            className={`fixed rounded-3xl w-[200px] z-40 top-0 left-0 h-screen transition-transform duration-300 ease-in-out flex justify-center 
             ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
-            md:translate-x-0 md:static md:flex md:w-20 md:bg-[#ebdaff] bg-[#200045]`} //estilos del contenedor
+            md:translate-x-0 md:static md:flex md:w-20 md:bg-[#ebdaff] bg-[#200045]  overflow-y-auto`} //estilos del contenedor
         >
-            <nav className="flex flex-col  items-center gap-6 py-8 md:py-16 md:gap-3 w-20 ">
-            {links.map((link, i) => (
+            <nav className="flex flex-col items-center justify-start gap-6 py-8 md:py-16 w-20 flex-1">
+            {visibleLinks.map((link, i) => (
                 // <Link to={link.path} className="no-underline text-white hover:text-purple-300 focus:outline-none">
             <NavLink 
                 to={link.path} 

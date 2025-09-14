@@ -19,13 +19,21 @@ const LoginForm = () => {
 
     const { login, loading, error } = useLogin();
 
-    const {control, handleSubmit, formState: {errors}} = useForm<FormValues>({
+    const {control, handleSubmit, formState: {errors}, setError} = useForm<FormValues>({
         resolver: zodResolver(schema)
     });
 
     const onSubmit: SubmitHandler<FormValues> = async (data) =>{
         console.log(data);
         const resultado = await login(data.email, data.password);
+        if (!resultado) {
+            // Si login() devuelve false, mostramos el error en el campo "email"
+            setError("root", {
+            type: "manual",
+            message: "error de logueo", // o usar el error de useLogin si querés más precisión
+            });
+            return error;
+        }
         if (resultado) {
             const rol = await getRole(resultado.usuario.uid)
             const dni = await getDNI(resultado.usuario.uid)
@@ -33,7 +41,7 @@ const LoginForm = () => {
             if (!rol) {
             // Manejo si no tiene rol
                 console.error("No se encontró el rol del usuario");
-                return null;
+                return error;
             }
             localStorage.setItem("usuario", JSON.stringify({
                 email: resultado.usuario.email,

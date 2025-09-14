@@ -80,7 +80,8 @@ export function DisciplineStudentsTable({
     const tableCellStyle = "bg-white text-blue-600 rounded-xl m-0.5 p-1";
 
     return (
-        <div className="w-full overflow-x-auto">
+        
+        <div className="w-full overflow-x-auto scrollable-table">
                 <div className="mb-4 flex flex-col items-center">
                 <label className="text-white mb-1" htmlFor="disciplina-select">
                     Seleccionar Disciplina:

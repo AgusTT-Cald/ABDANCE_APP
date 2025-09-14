@@ -9,6 +9,7 @@ export const useLogin= () =>{
     const [error, setError] = useState<string | null>(null);
 
     const login = async(email:string, password:string) =>{
+        
         //se setea el loading en true y el error en null.
         setLoading(true);
         setError(null);
@@ -28,10 +29,28 @@ export const useLogin= () =>{
             return { usuario, bearerToken }; 
 
         }catch(error:any){
-            setError(error.message);
-            if (error.message == "Firebase: Error (auth/invalid-credential)."){
-                setError("El email o contraseña son incorrectos")
+            // setError(error.message);
+            // if (error.message == "Firebase: Error (auth/invalid-credential)."){
+            //     setError("El email o contraseña son incorrectos")
+            // }
+            console.error("Error en login:", error.code, error.message);
+            switch (error.code) {
+                case "auth/user-not-found":
+                    setError("El email o contraseña son incorrectas");
+                    break;
+                case "auth/wrong-password":
+                    setError(" El email o contraseña son incorrectas");
+                    break;
+                case "auth/invalid-email":
+                    setError("Correo inválido o contraseña incorrecta");
+                    break;
+                case "auth/invalid-credential":
+                    setError("El email o contraseña son incorrectos");
+                    break;
+                default:
+                    setError("Error al iniciar sesión. Intenta nuevamente.");
             }
+
             return false;
         }finally{
             setLoading(false);

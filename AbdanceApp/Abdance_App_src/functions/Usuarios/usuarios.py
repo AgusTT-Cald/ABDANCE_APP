@@ -94,12 +94,29 @@ def postUsuarios(request, uid=None, role=None):
         if not user_dni or not user_apellido or not user_name or not user_email or not user_rol:
             return {'Error':'Faltan datos, revise dni, nombre, apellido, correo electronico, rol'}, 400
         
+        # --- Verificar si el DNI ya existe ---
+        dni_doc = db.collection("usuarios").document(str(user_dni)).get()
+        if dni_doc.exists:
+            return {'Error': 'El DNI ya está registrado'}, 400
+
+        # --- Verificar si el email ya existe ---
+        email_query = db.collection("usuarios").where("email", "==", user_email).limit(1).get()
+        if len(email_query) > 0:
+            return {'Error': 'El email ya está registrado'}, 400
         # Intenta parsear las fechas si vienen como string
         try:
             birthdate = datetime.fromisoformat(user_birthdate) if user_birthdate else None
             registration_date = datetime.fromisoformat(user_registrationDate) if user_registrationDate else None
         except ValueError:
             return {'error': 'Formato de fecha inválido'}, 400 # formato de la fecha = YYYY-mm-ddThh:mm:ss.499588
+        
+        # Validaciones de fecha
+        if birthdate and registration_date:
+            if birthdate == registration_date:
+                return {'error': 'La fecha de nacimiento no puede ser igual a la fecha de inscripción'}, 400
+            if birthdate > registration_date:
+                return {'error': 'La fecha de nacimiento no puede ser posterior a la fecha de inscripción'}, 400
+        
         
         try:
             #se crea el usuario usando su email como email de ingreso y su dni como su contraseña
@@ -123,7 +140,7 @@ def postUsuarios(request, uid=None, role=None):
             
             return {'message': 'Usuario registrado exitosamente', 'user_id': usuario.uid}, 201
         except Exception as e:
-            return {'error': str(e)}, 400
+            return {'error': str(e) }, 400
             return
 
 @require_auth(required_roles=['admin', 'profesor']) 
@@ -153,6 +170,7 @@ def putUsuarios(request, uid=None, role=None):
 
 @require_auth(required_roles=['admin', 'profesor']) 
 def deleteUsuarios(request, uid=None, role=None):
+    import time
     data = request.get_json(silent=True) or {}
     
     if not data or 'dni' not in data:
@@ -161,6 +179,7 @@ def deleteUsuarios(request, uid=None, role=None):
     
     user_ref = db.collection('usuarios').document(data['dni'])
     user_doc = user_ref.get()
+    
     
     #control de errores 
     if not user_doc.exists:
@@ -187,3 +206,71 @@ def deleteUsuarios(request, uid=None, role=None):
     #eliminacion de BD firestore
     user_ref.delete()
     return {'message':'Usuario eliminado correctamente'}, 200
+
+@require_auth(required_roles=['admin'])
+def eliminar_usuario_con_inscripciones(request, uid=None, role=None):
+    data = request.get_json(silent=True) or {}
+    dni_usuario = data.get('dni')
+
+    if not dni_usuario:
+        return {'error': 'DNI requerido'}, 400
+
+    # Paso 1: Eliminar el usuario
+    user_ref = db.collection('usuarios').document(dni_usuario)
+    user_doc = user_ref.get()
+    
+    if not user_ref.get().exists:
+        return {'error': 'Usuario no encontrado'}, 404
+    
+    user_data = user_doc.to_dict()
+    user_uid = user_data.get('user_uid')  # Aquí obtienes el UID para Auth
+    
+    
+    
+    #se eliminan todas las subcollections
+    def delete_all_subcollections(doc_ref):
+        for subcol in doc_ref.collections():
+            for doc in subcol.stream():
+                doc.reference.delete()
+            print(f"[OK] Subcolección {subcol.id} eliminada.")
+    
+    # Eliminar subcolecciones conocidas 
+    import time
+    subcolecciones = ['inasistencias']
+    for col_name in subcolecciones:
+        subcol_ref = user_ref.collection(col_name)
+        while True:
+            docs = list(subcol_ref.limit(500).stream())
+            if not docs:
+                break
+            batch = db.batch()
+            for doc in docs:
+                batch.delete(doc.reference)
+            batch.commit()
+            time.sleep(0.05)
+        
+    # eliminar dinámicamente todas las subcolecciones para asegurar eliminacion total
+    delete_all_subcollections(user_ref)
+    
+    
+    
+    #eliminacion de usuario
+    user_ref.delete()
+
+    # Paso 2: Buscar todas las disciplinas y eliminar al usuario de cada una
+    disciplinas = db.collection('disciplinas').stream()
+
+    for disciplina in disciplinas:
+        alumnos_ref = disciplina.reference.collection('alumnos').document(dni_usuario)
+        if alumnos_ref.get().exists:
+            alumnos_ref.delete()
+    
+    
+    #Eliminar usuario de Firebase Authentication
+    if user_uid:
+        try:
+            auth.delete_user(user_uid)
+        except auth.AuthError as e:
+            return {'error': f'Error al eliminar usuario de autenticación: {str(e)}'}, 500
+
+    return {'message': f'Usuario {dni_usuario} y sus inscripciones fueron eliminados'}, 200

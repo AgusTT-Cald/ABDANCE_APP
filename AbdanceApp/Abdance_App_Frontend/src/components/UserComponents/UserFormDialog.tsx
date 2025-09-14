@@ -15,7 +15,7 @@ type Props = {
 
 export function UserFormDialog({ open, user, onClose, onUserUpdated }: Props) {
 const [formData, setFormData] = useState(user);
-
+const selectedRolDefault = "alumno";
 const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 };
@@ -43,28 +43,34 @@ const handleSave = async () => {
 
 const handleDelete = async () => {
     const token = localStorage.getItem("token");
-    const res = await fetch("https://<your-endpoint>/usuarios", {
-    method: "DELETE",
-    headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ dni: user.dni }),
-    });
+    const endpointUrl =  import.meta.env.VITE_API_URL_DEV
+    const confirm = window.confirm(`¿Eliminar al usuario con DNI ${user.dni} y todas sus inscripciones?`);
+    if (!confirm) return;
 
-    if (!res.ok) {
-    alert("Error al eliminar el usuario");
-    } else {
-    alert("Usuario eliminado");
-    onUserUpdated();
-    onClose();
+    try {
+        const res = await fetch(`${endpointUrl}/usuarios/eliminar`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ dni : user.dni }),
+        });
+
+        const result = await res.json();
+        alert(result.message || "Usuario eliminado exitosamente.");
+        onUserUpdated(); // o la función que recargue la 
+        onClose();//cierra el dialog
+    } catch (error) {
+        alert("Error al eliminar el usuario.");
     }
 };
+
 
 if (!open) return null;
 
 return (
-    <div className="fixed inset-0 flex justify-center items-center bg-[#00000060] bg-opacity-40">
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-[#00000060] bg-opacity-40">
     <div className="bg-white p-6 rounded shadow-md w-96">
         <h2 className="text-xl font-bold mb-4">Editar Usuario</h2>
         <label className="block mb-2">DNI</label>
@@ -77,9 +83,9 @@ return (
         <input name="email" value={formData.email} onChange={handleChange} className="border w-full mb-3 p-2" />
         <label className="block mb-2">Rol</label>
         <select name="rol" value={formData.rol} onChange={handleChange} className="border w-full mb-3 p-2">
+            <option value="alumno">alumno</option>
             <option value="admin">admin</option>
             <option value="profesor">profesor</option>
-            <option value="alumno">alumno</option>
         </select>
         <p className="text-red-500 font-extralight mt-1.5">Si se quiere modificar el DNI del usuario se tiene que eliminar este mismo y crearlo nuevamente</p>
 

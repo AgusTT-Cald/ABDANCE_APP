@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import {  Navigate, Route, Routes } from "react-router-dom"; 
 import App from "./App";
 import { PrivateGuard } from "./guard/PrivateGuard";
-import {DisciplinaTable, Loader, UserTable} from './components'
+import { Loader} from './components'
 import Dashboard from "./pages/Dashboard";
 import Eventos from "./pages/Eventos";
 import EventoDetalle from "./pages/EventoDetalle"; 
@@ -44,7 +44,7 @@ export const AppRouter = ({children}:Props) =>{
                             <Route path="/dashboard/usuarios/agregar" element={<Dashboard/>} />
                             <Route path="/dashboard/usuarios/id_usuario" element={<Dashboard/>} />
 
-                            <Route path="/dashboard/disciplinas" element={<DisciplinaTable/>} />
+                            <Route path="/dashboard/disciplinas" element={<DisciplinaContentDashboard/>} />
                             <Route path="/dashboard/disciplinas/agregar" element={<Dashboard/>} />
                             <Route path="/dashboard/disciplinas/id_disciplina" element={<Dashboard/>} />
 
@@ -75,8 +75,8 @@ export const AppRouter = ({children}:Props) =>{
 import { Page_404 } from "./pages/Page_404";
 import { Page_403 } from "./pages/Page_403";
 import UserContentDashboard from "./pages/UserContentDashboard";
-import { DisciplineStudentsTable } from "./components/InasistenciaComponents/DisciplineStudentsTable";
 import InasistenciaContentDashboard from "./pages/InasistenciaContentDashboard";
+import DisciplinaContentDashboard from "./pages/DisciplinaContentDashboard";
 interface Props{
     children: ReactNode
 }

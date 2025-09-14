@@ -2,9 +2,9 @@ import { ReactNode, useState } from 'react';
 import {UserTable} from '../components'
 import { CreateUserForm } from '../components/UserComponents/CreateUserForm';
 import { DisciplineStudentsTable } from '../components/InasistenciaComponents/DisciplineStudentsTable';
-import { InasistenciasTable } from '../components/InasistenciaComponents/InasistenciaUserTable';
 import { StudentsInasistenciasTable } from '../components/InasistenciaComponents/StudentsInasistenciasTable';
 import { useAuth } from '../hooks/useAuth';
+import { InasistenciasTable } from '../components/InasistenciaComponents/InasistenciaTable';
 
 
 
@@ -68,8 +68,7 @@ export const InasistenciaContentDashboard = ({children}: Props) =>{
 
         {!mostrarTomaAsistencia ? (
             <>
-            <StudentsInasistenciasTable reloadFlag={reloadFlag} />
-            <div className="mt-4 text-right">
+            <div className="mt-4 text-center mb-4">
                 <button
                 onClick={() => setMostrarTomaAsistencia(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
@@ -77,6 +76,8 @@ export const InasistenciaContentDashboard = ({children}: Props) =>{
                 TOMAR ASISTENCIA
                 </button>
             </div>
+            <StudentsInasistenciasTable reloadFlag={reloadFlag} />
+            
             </>
         ) : (
             <>

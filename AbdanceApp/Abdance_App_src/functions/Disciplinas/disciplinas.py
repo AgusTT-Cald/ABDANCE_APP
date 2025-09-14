@@ -6,7 +6,7 @@ from collections import OrderedDict
 from firebase_admin import credentials, firestore, auth
 from functions.Cuotas.utilidades_cuotas import marcar_cuotas_eliminacion_disciplina
 from firebase_init import db  # Firebase con base de datos inicializada
-from datetime import datetime
+from datetime import datetime, time
 from functions.Usuarios.auth_decorator import require_auth
 
 
@@ -241,25 +241,53 @@ def putDisciplinas(request, uid=None, role=None):
 
 @require_auth(required_roles=['admin'])
 def deleteDisciplina(request, uid=None, role=None):
-    #se debe eliminar una disciplina segun el id especificado
-    data = request.get_json(silent=True) or {} 
-    
-    if not data or 'id' not in data:
-        return {'error': ' Ingrese el id de la disciplina correspondiente'}, 400 #######
-    
-    disciplina_ref = db.collection('disciplinas').document(data['id'])
-    disciplina_doc = disciplina_ref.get()
-    disciplina_data = disciplina_doc.to_dict()
-    
-    #control de errores 
-    if not disciplina_doc.exists:
-        return {'error': 'No se encontro la disciplina especificada'}, 404
-    
-    marcar_cuotas_eliminacion_disciplina(data['id'])
-    #eliminacion de BD firestore
-    disciplina_ref.delete()
-    return {'message':'Disciplina eliminada correctamente'}, 200
+    import time
+    data = request.get_json(silent=True) or {}
 
+    if not data or 'id' not in data:
+        return {'error': 'Ingrese el id de la disciplina correspondiente'}, 400
+
+    disciplina_id = data['id']
+    disciplina_ref = db.collection('disciplinas').document(disciplina_id)
+
+    def delete_all_subcollections(doc_ref):
+        for subcol in doc_ref.collections():
+            for doc in subcol.stream():
+                doc.reference.delete()
+            print(f"[OK] Subcolección {subcol.id} eliminada.")
+
+    try:
+        disciplina_doc = disciplina_ref.get()
+        if not disciplina_doc.exists:
+            return {'error': 'No se encontró la disciplina especificada'}, 404
+
+        # Eliminar subcolecciones conocidas 
+        subcolecciones = ['alumnos', 'profesores', 'horarios']
+        for col_name in subcolecciones:
+            subcol_ref = disciplina_ref.collection(col_name)
+            while True:
+                docs = list(subcol_ref.limit(500).stream())
+                if not docs:
+                    break
+                batch = db.batch()
+                for doc in docs:
+                    batch.delete(doc.reference)
+                batch.commit()
+                time.sleep(0.05)
+
+        # eliminar dinámicamente todas las subcolecciones para asegurar eliminacion total
+        delete_all_subcollections(disciplina_ref)
+
+        # Eliminar el documento principal
+        disciplina_ref.delete()
+
+        return {
+            'message': 'Disciplina y subcolecciones eliminadas exitosamente.'
+        }, 200
+
+    except Exception as e:
+        print(f"[ERROR] Eliminación fallida: {str(e)}")
+        return {'error': f'Error al eliminar la disciplina: {str(e)}'}, 500
 
 @require_auth(required_roles=['admin'])
 def gestionarAlumnosDisciplina(request, uid=None, role=None):
