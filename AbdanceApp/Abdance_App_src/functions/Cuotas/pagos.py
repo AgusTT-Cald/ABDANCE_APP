@@ -1,7 +1,11 @@
 import mercadopago
 import os
+import hashlib
+import hmac
+from numbers import Number
 from datetime import datetime
 from pydantic import ValidationError
+from functions.Otros.utilidades_datetime import TIME_ZONE
 from firebase_init import db  # Firebase con base de datos inicializada
 from functions.Usuarios.auth_decorator import require_auth
 from functions.Cuotas.utilidades_cuotas import get_monto_cuota, ordenar_datos_cuotas, METODOS_PAGO, enviar_email_pago_cuota
@@ -9,6 +13,7 @@ from functions.Cuotas.query_cuotas_classes import CuotasQuery
 from functions.Estadisticas.estadisticas import incrementar_estadistica_anio, incrementar_estadistica_mes
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 
 @require_auth(required_roles=['alumno', 'admin'])
@@ -135,7 +140,7 @@ def establecer_pago(data_payment):
         
         raw_date = pago.get("date_approved")
         dt = datetime.fromisoformat(raw_date)                  
-        dt_local = dt.astimezone(ZoneInfo("America/Argentina/Buenos_Aires"))
+        dt_local = dt.astimezone(ZoneInfo(TIME_ZONE))
         incrementar_estadistica_anio(dt_local, cantidad_transaccion)
         incrementar_estadistica_mes(dt_local, cantidad_transaccion, id_objeto)
 
@@ -149,3 +154,94 @@ def establecer_pago(data_payment):
             'metodoPago': metodo_pago_traducido,
             'montoPagado': cantidad_transaccion
         })
+
+
+def pagar_cuota(request):
+    try:
+        #Obtiene el ID de la request y la firma de la notificación.
+        request_id = request.headers.get("X-Request-Id")
+        signature = request.headers.get("X-Signature")
+
+        #Obtiene los datos del body y la query de la notificacion.
+        data = request.get_json(silent=True) or {}
+        parametros_query = request.args
+        data_id = parametros_query.get("data.id")
+
+        #Parte la firma en sus dos partes correspondientes y crea las variables donde se pondrán.
+        partes_signature = signature.split(",")
+        timestamp = None
+        hash_v1 = None
+
+        #Itera sobre cada una para asignar sus valores a cada parte.
+        for parte in partes_signature:
+            key_value = parte.split("=", 1)
+            if len(key_value) == 2:
+                key = key_value[0].strip() 
+                value = key_value[1].strip() 
+
+                if key == "ts":
+                    timestamp = value
+                elif key == "v1":
+                    hash_v1 = value
+
+        load_dotenv()
+        WEBHOOK_KEY = os.getenv("MP_WEBHOOK_KEY")
+        
+        #Creación del manifiesto y codificación de la firma
+        manifiesto = f"id:{data_id};request-id:{request_id};ts:{timestamp};"
+        firma_hmac = hmac.new(WEBHOOK_KEY.encode(), msg=manifiesto.encode(), digestmod=hashlib.sha256)
+        resultado_sha = firma_hmac.hexdigest()
+
+        if resultado_sha == hash_v1:
+            topic = parametros_query.get("type")
+
+            if topic == "payment":
+                establecer_pago(data["data"]["id"])
+
+            return {"received": "true"}, 200
+        else:
+            return '', 200
+    
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+
+@require_auth(required_roles=['admin'])
+def pagar_cuotas_manualmente(request_cuotas_id, uid=None, role=None):
+    try:
+        data = request_cuotas_id.get_json(silent=True) or {}
+        lista_cuotas_id = data.get("lista_cuotas", [])
+
+        if not isinstance(lista_cuotas_id, list) or not lista_cuotas_id:
+            return {'error': "El campo de \"lista_cuotas\" no es una lista o no está definido."}, 400
+        if len(lista_cuotas_id) > 100:
+            return {'error': "¡Se están intentando pagar muchas cuotas a la vez!."}, 400
+
+        for dict_cuota in lista_cuotas_id:
+            for id_cuota, valor_pagar in dict_cuota.items():
+                cuota_ref = db.collection('cuotas').document(id_cuota)
+                cuota_doc = cuota_ref.get()
+        
+                cuota_dict = cuota_doc.to_dict()
+                if cuota_dict.get('estado').lower() == 'pagada':
+                    return {'error': 'Una o varias cuotas ya están pagadas.'}, 400
+                
+                monto_pagado = valor_pagar
+                if not isinstance(monto_pagado, Number):
+                    return {'error': '¡Uno de los valores no es un numero!.'}, 400
+
+                #SE ASUME QUE EL PAGO SE HACE EN EFECTIVO
+                if cuota_doc.exists: 
+                    cuota_ref.update({
+                    'estado': 'pagada',
+                    'fechaPago': datetime.now(ZoneInfo(TIME_ZONE)),
+                    'metodoPago': "Efectivo",
+                    'montoPagado': monto_pagado
+                })
+                else:
+                    return {'error':'Una cuota no fue encontrada.'}, 404
+        
+        return "Cuotas pagadas manualmente con éxito.", 200
+
+    except Exception as e:
+        return {'error': str(e)}, 500

@@ -1,5 +1,4 @@
 import Loader from "../Loader";
-import generalDateParsing from "../../utils/generalDateParsing";
 import BotonCreacionCuotas from "./BotonCreacionCuotas";
 import MensajeAlerta from "../MensajeAlerta";
 import { useEffect, useState } from "react";
@@ -311,7 +310,7 @@ export function CuotaAdminTable() {
 
   return (
     <div className="p-4">
-      {/* ——— Filtros ——— */}
+      {/* ——— Seccion de Filtros ——— */}
       <div className="flex flex-row gap-10 mb-4 mr-4">
         <div>
           <p className="block text-lg font-medium text-gray-200 md:text-gray-800">
@@ -365,7 +364,7 @@ export function CuotaAdminTable() {
         </div>
       </div>
       
-      {/* ——— Resultados ——— */}
+      {/* ——— Sección de Resultados ——— */}
       {contenidoResultados}
 
       <PagoManualModal

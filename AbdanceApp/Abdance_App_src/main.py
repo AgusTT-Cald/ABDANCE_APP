@@ -15,14 +15,16 @@ from functions.Asistencias.asistencias import (
 from functions.Cuotas.cuotas import (
     cuotas, 
     getCuotasDNIAlumno,
-    pagar_cuota, 
-    pagar_cuotas_manualmente,
     crear_cuotas_mes,
     eliminar_cuotas_forma_automatica
 )
 from functions.Estadisticas.estadisticas import (
     total_pagado_mes,
     totales_por_mes_anio
+)
+from functions.Cuotas.pagos import(
+    pagar_cuota,
+    pagar_cuotas_manualmente
 )
 from functions.Cuotas.pagos import crear_preferencia_cuota
 from functions.Usuarios.auth_users import register_student

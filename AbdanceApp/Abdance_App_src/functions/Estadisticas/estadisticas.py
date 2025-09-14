@@ -1,44 +1,13 @@
 from typing import OrderedDict
-from firebase_init import db, firestore
 from datetime import datetime
-from functions.Usuarios.auth_decorator import require_auth
-from functions.Otros.utilidades_datetime import MESES_REVRSD
 from zoneinfo import ZoneInfo
+from firebase_init import db, firestore
+from functions.Usuarios.auth_decorator import require_auth
+from functions.Otros.utilidades_datetime import MESES_REVRSD, TIME_ZONE
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 
-
-def fetch_pagadas():
-    """Recupera todas las cuotas con estado "pagada" y devuelve una lista de dicts.
-
-    Args:
-        None
-
-    Returns:
-        Dict: Un diccionario con el formato: 
-        - fechaPago: datetime
-        - montoPagado: float
-    """
-    cuotas_pagadas = db.collection('cuotas').where('estado', '==', 'pagada').stream()
-    dict_to_return = []
-
-    for cuota in cuotas_pagadas:
-        cuota_dict = cuota.to_dict()
-        fecha_pago = cuota_dict.get('fechaPago')
-
-        # Se normaliza a datetime
-        if isinstance(fecha_pago, str):
-            dt = datetime.fromisoformat(fecha_pago)
-        else:
-            dt = fecha_pago  # El Firestore Timestamp ya se normaliza a datetime
-
-        monto = cuota_dict.get('montoPagado') or 0
-        dict_to_return.append({'fechaPago': dt, 'montoPagado': monto, 'concepto': cuota.get('concepto'), 'DNIAlumno': cuota.get('dniAlumno')})
-
-    return dict_to_return
-
-
-#@require_auth(required_roles=['admin'])
+@require_auth(required_roles=['admin'])
 def total_pagado_mes(request, uid=None, role=None):
     try:
         data = request.get_json(silent=True) or {}
@@ -73,7 +42,7 @@ def total_pagado_mes(request, uid=None, role=None):
         return {'error': str(e)}, 500
 
 
-#@require_auth(required_roles=['admin'])
+@require_auth(required_roles=['admin'])
 def totales_por_mes_anio(request, uid=None, role=None):
     try:
         data = request.get_json(silent=True) or {}
@@ -121,7 +90,7 @@ def recomputar_almacenar_anio(year: int):
         # Normalizar fecha a datetime (manejar strings y Timestamp)
         if isinstance(fecha_pago, str):
             try:
-                fecha_dt = datetime.fromisoformat(fecha_pago).astimezone(ZoneInfo("America/Argentina/Buenos_Aires"))
+                fecha_dt = datetime.fromisoformat(fecha_pago).astimezone(ZoneInfo(TIME_ZONE))
             except Exception:
                 #Ignora los formatos inválidos
                 continue
@@ -146,7 +115,7 @@ def recomputar_almacenar_anio(year: int):
     doc_ref = db.collection('estadisticas').document(str(year))
     payload = {
         'month_totals': result,
-        'generated_at': datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")),
+        'generated_at': datetime.now(ZoneInfo(TIME_ZONE)),
         'source_latest_pago': latest_pago_dt
     }
 
@@ -163,11 +132,11 @@ def recomputar_almacenar_mes(year: int, month: int):
     y devuelve el dict nombre_mes -> total (float).
     """
     #Rango de: [start, end)
-    start = datetime(year, month, 1, 0, 0, 0, tzinfo=ZoneInfo("America/Argentina/Buenos_Aires"))
+    start = datetime(year, month, 1, 0, 0, 0, tzinfo=ZoneInfo(TIME_ZONE))
     if month == 12:
-        end = datetime(year + 1, 1, 1, 0, 0, 0, tzinfo=ZoneInfo("America/Argentina/Buenos_Aires"))
+        end = datetime(year + 1, 1, 1, 0, 0, 0, tzinfo=ZoneInfo(TIME_ZONE))
     else:
-        end = datetime(year, month + 1, 1, 0, 0, 0, tzinfo=ZoneInfo("America/Argentina/Buenos_Aires"))
+        end = datetime(year, month + 1, 1, 0, 0, 0, tzinfo=ZoneInfo(TIME_ZONE))
 
     # Query: cuota pagada y fechaPago dentro del mes
     try:
@@ -193,7 +162,7 @@ def recomputar_almacenar_mes(year: int, month: int):
         #Normalizar a datetime
         if isinstance(fecha_pago, str):
             try:
-                dt = datetime.fromisoformat(fecha_pago).astimezone(ZoneInfo("America/Argentina/Buenos_Aires"))
+                dt = datetime.fromisoformat(fecha_pago).astimezone(ZoneInfo(TIME_ZONE))
             except Exception:
                 continue
         else:
@@ -219,7 +188,7 @@ def recomputar_almacenar_mes(year: int, month: int):
     payload = {
         'Total': float(total),
         'Detalle': detalle,
-        'generated_at': datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")),
+        'generated_at': datetime.now(ZoneInfo(TIME_ZONE)),
         'source_latest_pago': latest_pago
     }
 
@@ -240,7 +209,7 @@ def incrementar_estadistica_anio(fechaPago: datetime, monto: float):
     doc_ref.set({
         f'month_totals.{month_name}': firestore.firestore.Increment(monto),
         'source_latest_pago': fechaPago,
-        'generated_at': datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+        'generated_at': datetime.now(ZoneInfo(TIME_ZONE))
     }, merge=True)
 
 
@@ -265,6 +234,6 @@ def incrementar_estadistica_mes(fechaPago: datetime, monto: float, cuota_doc_id:
     doc_ref.set({
         'Total': firestore.firestore.Increment(float(monto)),
         'Detalle': firestore.firestore.ArrayUnion([detalle_obj]),
-        'generated_at': datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")),
+        'generated_at': datetime.now(ZoneInfo(TIME_ZONE)),
         'source_latest_pago': fechaPago
     }, merge=True)
