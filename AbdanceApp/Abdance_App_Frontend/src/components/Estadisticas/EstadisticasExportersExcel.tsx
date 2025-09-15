@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
 
+
 export function exportarYearExcel(year: number, byYearData: Record<string, number>) {
   const rows = Object.entries(byYearData).map(([mes, total]) => ({
     Mes: mes.charAt(0).toUpperCase() + mes.slice(1),
@@ -16,6 +17,7 @@ export function exportarYearExcel(year: number, byYearData: Record<string, numbe
   const blob = new Blob([wbout], { type: 'application/octet-stream' });
   saveAs(blob, `totales_${year}.xlsx`);
 }
+
 
 export function exportarMesExcel(year: number, month: number, byMonthData: {Detalle:any[], Total:number}) {
   //Las filas son el "Detalle"

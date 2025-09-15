@@ -8,7 +8,7 @@ import Eventos from "./pages/Eventos";
 import EventoDetalle from "./pages/EventoDetalle"; 
 import FormularioEntradasPage from './pages/FormularioEntradasPage';
 import PagoExitoso from "./pages/PagoExitosoPage";
-import CuotaContentDashboard from "./components/cuotas/CuotaContentDashboard";
+import CuotaContentDashboard from "./components/Cuotas/CuotaContentDashboard";
 import EstadisticasContentDashboard from "./components/Estadisticas/EstadisticasContentDashboard";
 
 

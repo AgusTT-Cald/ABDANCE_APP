@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { exportarYearExcel, exportarMesExcel } from './EstadisticasExporters';
+import { exportarYearExcel, exportarMesExcel } from './EstadisticasExportersExcel';
+import { exportarMesPDF, exportarYearPDF } from './EstadisticasExportersPDF';
+import MensajeAlerta from '../MensajeAlerta';
+import Loader from '../Loader';
 
 const monthNames = [
   'Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -142,12 +145,21 @@ export function EstadisticasTable() {
         </div>
       )}
 
-      {loading && <p>Cargando...</p>}
-      {error   && <p className="text-red-500">Error: {error}</p>}
+      {loading && 
+      <div className="flex flex-row w-full h-30 justify-center mt-40">
+        <Loader />
+      </div>}
+      {error && <div className="w-full overflow-auto">
+        <MensajeAlerta
+          tipo="error"
+          mensaje={`Error: ${error}`}
+        />
+      </div>}
 
       {byYearData && (
          <div>
           <button className='dark:text-white' onClick={() => exportarYearExcel(year, byYearData!)}>Exportar a Excel</button>
+          <button className='dark:text-white' onClick={() => exportarYearPDF(year, byYearData!)}>Exportar a PDF</button>
           <table className="table-fixed min-w-[60%] max-w-[80%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1 mx-auto">
             <thead>
             <tr className="bg-transparent">
@@ -172,6 +184,7 @@ export function EstadisticasTable() {
       {byMonthData && (
         <div className="space-y-2">
           <button className='dark:text-white' onClick={() => exportarMesExcel(year, month, byMonthData!)}>Exportar a Excel</button>
+          <button className='dark:text-white' onClick={() => exportarMesPDF(year, month, byMonthData!)}>Exportar a PDF</button>
           <table className="mx-auto table-fixed min-w-[90%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1">
             <thead><tr className="bg-transparent">
               <th className={tableHeaderStyle + "w-[30px]"}>Concepto</th>
