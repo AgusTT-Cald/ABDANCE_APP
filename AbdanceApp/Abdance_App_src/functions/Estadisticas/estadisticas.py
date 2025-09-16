@@ -18,7 +18,7 @@ def total_pagado_mes(request, uid=None, role=None):
         anio_filtro = data.get('year')
         mes_filtro = data.get('month')
 
-        if mes_filtro not in range(1, 12):
+        if mes_filtro not in range(1, 13):
             return {'error': "Se debe especificar un numero de mes válido: 1-Enero, 2-Febrero, ... , 12-Diciembre"}, 400
         if anio_filtro > datetime.now().year or anio_filtro < 1:
             return {'error': "Se debe especificar un numero de año válido a partir del año actual."}, 400

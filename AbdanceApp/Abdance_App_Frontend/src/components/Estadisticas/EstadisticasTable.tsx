@@ -3,17 +3,15 @@ import { exportarYearExcel, exportarMesExcel } from './EstadisticasExportersExce
 import { exportarMesPDF, exportarYearPDF } from './EstadisticasExportersPDF';
 import MensajeAlerta from '../MensajeAlerta';
 import Loader from '../Loader';
+import { Icon } from '@iconify/react/dist/iconify.js';
+
+
 
 const monthNames = [
   'Enero','Febrero','Marzo','Abril','Mayo','Junio',
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
 ];
 
-const MONTH_ORDER = [
-  "enero", "febrero", "marzo", "abril",
-  "mayo", "junio", "julio", "agosto",
-  "septiembre", "octubre", "noviembre", "diciembre"
-];
 
 export function EstadisticasTable() {
   const baseUrl = import.meta.env.VITE_API_URL;
@@ -55,8 +53,8 @@ export function EstadisticasTable() {
         },
         body: JSON.stringify({ year })
       });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
       setByYearData(json);
     } catch (e: any) {
       setError(e.message);
@@ -78,8 +76,8 @@ export function EstadisticasTable() {
         },
         body: JSON.stringify({ year, month })
       });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
       setByMonthData(json);
     } catch (e: any) {
       setError(e.message);
@@ -87,10 +85,6 @@ export function EstadisticasTable() {
       setLoading(false);
     }
   };
-
-
-  const tableHeaderStyle = "bg-[#fff0] text-[#fff] justify-center text-lg";
-  const tableDatacellStyle = "text-blue-500 bg-white rounded-xl m-0.5 p-1";
 
 
   return (
@@ -146,9 +140,13 @@ export function EstadisticasTable() {
       )}
 
       {loading && 
-      <div className="flex flex-row w-full h-30 justify-center mt-40">
-        <Loader />
-      </div>}
+      <div>
+        <p className="block text-lg font-medium text-gray-200 md:text-gray-800">Calculando datos...</p>
+        <div className="flex flex-row w-full h-30 justify-center mt-10">
+          <Loader />
+        </div>
+      </div>
+      }
       {error && <div className="w-full overflow-auto">
         <MensajeAlerta
           tipo="error"
@@ -157,58 +155,58 @@ export function EstadisticasTable() {
       </div>}
 
       {byYearData && (
-         <div>
-          <button className='dark:text-white' onClick={() => exportarYearExcel(year, byYearData!)}>Exportar a Excel</button>
-          <button className='dark:text-white' onClick={() => exportarYearPDF(year, byYearData!)}>Exportar a PDF</button>
-          <table className="table-fixed min-w-[60%] max-w-[80%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1 mx-auto">
-            <thead>
-            <tr className="bg-transparent">
-                <th className={tableHeaderStyle}>Mes</th>
-                <th className={tableHeaderStyle}>Total</th>
-            </tr>
-            </thead>
-            <tbody>
-            {MONTH_ORDER.map(monthName => (
-                <tr key={monthName} className="border-t">
-                <td className={`${tableDatacellStyle} capitalize`}>{monthName}</td>
-                <td className={`${tableDatacellStyle}`}>
-                    ${byYearData[monthName] ?? 0}
-                </td>
-                </tr>
-            ))}
-            </tbody>
-          </table>
+         <div className="space-y-5 flex flex-col mt-20 items-center">
+          <p className="block text-xl font-medium text-gray-200 md:text-gray-800 mb-10">Ya puedes descargar lo calculado en PDF y Excel.</p>
+          <button onClick={() => exportarYearPDF(year, byYearData!)} className="relative bg-[#4b48ff] text-white font-medium text-[17px] px-4 py-[0.35em] pl-5 h-[4.0em] w-60 rounded-[0.9em] flex items-center overflow-hidden cursor-pointer shadow-[inset_0_0_1.6em_-0.6em_#f90404] group">
+            <span className="mr-5 text-xl">Descargar en PDF</span>
+            <div className="absolute right-[0.3em] bg-white h-[3.0em] w-[2.2em] rounded-[0.7em] flex items-center justify-center transition-all duration-500 group-hover:w-[calc(100%-0.6em)] shadow-[0.1em_0.1em_0.6em_0.2em_#f90404] active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width={36} height={36} className="w-[2.0em] transition-transform duration-100 text-[#f90404]">
+                <Icon icon="material-symbols:picture-as-pdf-rounded" width="36" height="36" />
+              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width={36} height={36} className="w-[2.0em] transition-transform duration-100 text-[#f90404]">  
+                <Icon icon="material-symbols:sim-card-download" width="36" height="36" />
+              </svg>
+            </div>
+          </button>
+          <button onClick={() => exportarYearExcel(year, byYearData!)} className="relative bg-[#04870a] text-white font-medium text-[17px] px-4 py-[0.35em] pl-5 h-[4.0em] w-60 rounded-[0.9em] flex items-center overflow-hidden cursor-pointer shadow-[inset_0_0_1.6em_-0.6em_#714da6] group">
+            <span className="mr-5 text-xl">Descargar en Excel</span>
+            <div className="absolute right-[0.3em] bg-white h-[3.0em] w-[2.2em] rounded-[0.7em] flex items-center justify-center transition-all duration-500 group-hover:w-[calc(100%-0.6em)] shadow-[0.1em_0.1em_0.6em_0.2em_#04870a] active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width={36} height={36} className="w-[2.0em] transition-transform duration-100 text-[#04870a]">  
+                <Icon icon="material-symbols:csv-rounded" width="36" height="36" />
+              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width={36} height={36} className="w-[2.0em] transition-transform duration-100 text-[#04870a]">  
+                <Icon icon="material-symbols:sim-card-download" width="36" height="36" />
+              </svg>
+            </div>
+          </button>
         </div>
       )}
 
       {byMonthData && (
-        <div className="space-y-2">
-          <button className='dark:text-white' onClick={() => exportarMesExcel(year, month, byMonthData!)}>Exportar a Excel</button>
-          <button className='dark:text-white' onClick={() => exportarMesPDF(year, month, byMonthData!)}>Exportar a PDF</button>
-          <table className="mx-auto table-fixed min-w-[90%] rounded-xl border-none md:border m-1 bg-transparent md:bg-[#1a0049] border-separate border-spacing-x-1 border-spacing-y-1">
-            <thead><tr className="bg-transparent">
-              <th className={tableHeaderStyle + "w-[30px]"}>Concepto</th>
-              <th className={tableHeaderStyle + "w-[100px]"}>Fecha Pago</th>
-              <th className={tableHeaderStyle + "w-[40px]"}>DNI de Alumno</th>
-              <th className={tableHeaderStyle + "w-[40px]"}>Monto</th>
-            </tr></thead>
-            <tbody>
-              {byMonthData.Detalle.map((d,i) => (
-                <tr key={i} className="border-t">
-                  <td className={`${tableDatacellStyle} truncate max-w-[150px] capitalize`}>{d.concepto}</td>
-                  <td className={`${tableDatacellStyle} truncate max-w-[200px] capitalize`}>{new Date(d.fechaPago).toLocaleString("es-AR")}</td>
-                  <td className={`${tableDatacellStyle} truncate max-w-[100px] capitalize`}>{d.DNIAlumno}</td>
-                  <td className={`${tableDatacellStyle} truncate max-w-[100px] capitalize`}>${d.montoPagado}</td>
-                </tr>
-              ))}
-              <tr className="bg-transparent">
-                <td className={tableHeaderStyle + "w-[40px] text-lg font-medium p-2 text-center"}>Total</td>
-                <td></td>
-                <td></td>
-                <td className={tableHeaderStyle + "w-[40px] text-md font-medium"}>${byMonthData.Total}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="space-y-2 flex flex-col mt-20 items-center">
+          <p className="block text-xl font-medium text-gray-200 md:text-gray-800 mb-10">Ya puedes descargar lo calculado en PDF y Excel.</p>
+          <button onClick={() => exportarMesPDF(year, month, byMonthData!)} className="relative bg-[#4b48ff] text-white font-medium text-[17px] px-4 py-[0.35em] pl-5 h-[4.0em] w-60 rounded-[0.9em] flex items-center overflow-hidden cursor-pointer shadow-[inset_0_0_1.6em_-0.6em_#f90404] group">
+            <span className="mr-5 text-xl">Descargar en PDF</span>
+            <div className="absolute right-[0.3em] bg-white h-[3.0em] w-[2.2em] rounded-[0.7em] flex items-center justify-center transition-all duration-500 group-hover:w-[calc(100%-0.6em)] shadow-[0.1em_0.1em_0.6em_0.2em_#f90404] active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width={36} height={36} className="w-[2.0em] transition-transform duration-100 text-[#f90404]">
+                <Icon icon="material-symbols:picture-as-pdf-rounded" width="36" height="36" />
+              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width={36} height={36} className="w-[2.0em] transition-transform duration-100 text-[#f90404]">  
+                <Icon icon="material-symbols:sim-card-download" width="36" height="36" />
+              </svg>
+            </div>
+          </button>
+          <button onClick={() => exportarMesExcel(year, month, byMonthData!)} className="relative bg-[#04870a] text-white font-medium text-[17px] px-4 py-[0.35em] pl-5 h-[4.0em] w-60 rounded-[0.9em] flex items-center overflow-hidden cursor-pointer shadow-[inset_0_0_1.6em_-0.6em_#714da6] group">
+            <span className="mr-5 text-xl">Descargar en Excel</span>
+            <div className="absolute right-[0.3em] bg-white h-[3.0em] w-[2.2em] rounded-[0.7em] flex items-center justify-center transition-all duration-500 group-hover:w-[calc(100%-0.6em)] shadow-[0.1em_0.1em_0.6em_0.2em_#04870a] active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width={36} height={36} className="w-[2.0em] transition-transform duration-100 text-[#04870a]">  
+                <Icon icon="material-symbols:csv-rounded" width="36" height="36" />
+              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width={36} height={36} className="w-[2.0em] transition-transform duration-100 text-[#04870a]">  
+                <Icon icon="material-symbols:sim-card-download" width="36" height="36" />
+              </svg>
+            </div>
+          </button>
         </div>
       )}
     </div>

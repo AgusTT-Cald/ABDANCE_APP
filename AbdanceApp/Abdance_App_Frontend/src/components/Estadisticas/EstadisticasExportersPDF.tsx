@@ -3,6 +3,7 @@ import { autoTable } from 'jspdf-autotable'
 import logo from "./../../../public/Logo.png";
 
 
+
 const MONTH_ORDER = [
   "enero", "febrero", "marzo", "abril",
   "mayo", "junio", "julio", "agosto",
@@ -15,6 +16,7 @@ export function exportarYearPDF(year: number, byYearData: Record<string, number>
     const title = `Ingresos por mes - ${year}`;
     const marginLeft = 40;
     let y = 40;
+    jsPDF.length
 
     //Título
     doc.setFontSize(18);

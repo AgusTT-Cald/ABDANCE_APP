@@ -1,12 +1,12 @@
 import Loader from "../Loader";
 import generalDateParsing from "../../utils/generalDateParsing";
 import axios from "axios";
+import icon from '../../../public/dance.ico'
+import MensajeAlerta from "../MensajeAlerta";
 import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
 import { useEffect, useState } from "react";
 import { useAuthFetch } from "../../hooks/useAuthFetch";
 import { Dialog, DialogTitle } from "@headlessui/react";
-import icon from '../../../public/dance.ico'
-import MensajeAlerta from "../MensajeAlerta";
 import { Cuota } from "./Cuota";
 
 

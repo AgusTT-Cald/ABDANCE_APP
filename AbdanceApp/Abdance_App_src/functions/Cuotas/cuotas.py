@@ -33,7 +33,7 @@ def cuotas(request):
         return 'hola cuotas', 200
 
 
-#@require_auth(required_roles=['alumno', 'profesor', 'admin'])
+@require_auth(required_roles=['alumno', 'profesor', 'admin'])
 def getCuotas(request, uid=None, role=None):
     try:
         data = request.args
@@ -44,19 +44,14 @@ def getCuotas(request, uid=None, role=None):
         #DNI del alumno para pedir las cuotas de este solamente
         dni_alumno = data.get('dniAlumno')
         
-        #El dia de recargo, asi solo se debe pasar por el front
-        #EL DIA DE RECARGO ES REQUERIDO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if 'dia_recargo' not in data:
-            return {'error': DIA_RECARGO_ERR_MSG}, 400
         if 'limite' not in data:
             return {'error': "No se ha puesto un limite a la cantidad de cuotas a traer."}, 400
         
         try:
-            recargo_day = int(data.get('dia_recargo'))
-            #Limite de cuotas a retirar (MAX DE 500)
+            #Limite de cuotas a retirar (MAX DE 320)
             limite = int(data.get('limite'))
         except ValueError as e:
-            return {'error': "El dia de recargo y/o el limite no son numeros enteros."}, 400
+            return {'error': "El limite no es un numero entero."}, 400
 
         # load_dotenv()
         # DIA_RECARGO = os.getenv("DIA_RECARGO")
@@ -138,7 +133,7 @@ def postCuotas(request, uid=None, role=None):
         cuota_id = cuota_ref.id
         data_cuota['id'] = cuota_id
 
-        #Generar datos pre_establecidos
+        #generar datos pre_establecidos
         data_cuota['estado'] = "pendiente"
         data_cuota['fechaPago'] = ""
         data_cuota['metodoPago'] = ""
@@ -147,7 +142,7 @@ def postCuotas(request, uid=None, role=None):
         #guardar documento con el id
         cuota_ref.set(data_cuota)
         
-        return {'message': 'Cuota registrada exitosamente'}, 201
+        return {'message': 'Cuota registrada exitosamente.'}, 201
 
     except Exception as e:
         return {'error': str(e)}, 500
@@ -235,26 +230,21 @@ def deleteCuotas(request, uid=None, role=None):
 
 
 
-#@require_auth(required_roles=['alumno', 'admin'])
+@require_auth(required_roles=['alumno', 'admin'])
 def getCuotasDNIAlumno(request, uid=None, role=None):
     try:
         #axiox no permite GETs con datos en JSON, por lo que es necesario usar los args.
         data = request.args
 
-        #El dia de recargo, asi solo se debe pasar por el front
-        #EL DIA DE RECARGO ES REQUERIDO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if 'dia_recargo' not in data:
-            return {'error': DIA_RECARGO_ERR_MSG}, 400
         if 'dniAlumno' not in data:
             return {'error': 'El DNI del alumno es requerido.'}, 400
         if 'limite' not in data:
             return {'error': "No se ha puesto un limite a la cantidad de cuotas a traer."}, 400
         
         try:
-            recargo_day = int(data.get('dia_recargo'))
             limite = int(data.get('limite'))
         except ValueError as e:
-            return {'error': "El dia de recargo no es un numero entero."}, 400
+            return {'error': "El limite no es un numero entero."}, 400
         
         cuota_id = data.get('cuota_id')
         #DNI del alumno para pedir las cuotas de este solamente
@@ -317,7 +307,7 @@ def getCuotasDNIAlumno(request, uid=None, role=None):
 
             return cuota_data, 200
         else:
-            return {'error':'Cuota no encontrada'}, 404
+            return {'error': 'Cuota no encontrada.'}, 404
         
     except Exception as e:
         return {'error': str(e)}, 500

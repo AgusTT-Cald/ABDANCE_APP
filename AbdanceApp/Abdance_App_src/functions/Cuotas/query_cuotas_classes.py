@@ -29,8 +29,8 @@ class CuotasQuery(BaseModel):
         except ValueError:
             raise ValueError("El numero del limite no es un entero.")
         
-        if not (1 <= value_int <= 500):
-            raise ValueError('limite fuera de rango: 1-500.')
+        if not (1 <= value_int <= 320):
+            raise ValueError('limite fuera de rango: 1-320.')
         return value_int
     
     @field_validator('dniAlumno', mode='after')

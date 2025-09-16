@@ -21,11 +21,10 @@ def crear_preferencia_cuota(request, uid=None, role=None):
     try:
         data = request.get_json(silent=True) or {}
         cuota_id = data.get('cuota_id')
-        dia_recargo = data.get('dia_recargo')
 
         #Verifica que no falten datos.
-        if not data or 'cuota_id' not in data or 'dia_recargo' not in data:
-            return {'error': 'El dia de recargo (dia_recargo) y el id de la cuota (cuota_id) son requeridos obligatoriamente.'}, 400  
+        if not data or 'cuota_id' not in data:
+            return {'error': 'El id de la cuota (cuota_id) es requerido obligatoriamente.'}, 400  
 
         load_dotenv()
         # DIA_RECARGO = os.getenv("DIA_RECARGO")
@@ -235,7 +234,7 @@ def pagar_cuotas_manualmente(request_cuotas_id, uid=None, role=None):
                     cuota_ref.update({
                     'estado': 'pagada',
                     'fechaPago': datetime.now(ZoneInfo(TIME_ZONE)),
-                    'metodoPago': "Efectivo",
+                    'metodoPago': "En site",
                     'montoPagado': monto_pagado
                 })
                 else:
