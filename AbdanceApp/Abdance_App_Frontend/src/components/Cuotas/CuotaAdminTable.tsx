@@ -166,6 +166,10 @@ export function CuotaAdminTable() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
 
+  //Paginación
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 25;
+
 
   //Carga de lista de disciplinas
   useEffect(() => {
@@ -210,6 +214,8 @@ export function CuotaAdminTable() {
       const data: Cuota[] = await res.json();
 
       setCuotas(estadoFilter ? data.filter(c => c.estado === estadoFilter) : data);
+      setPage(1); 
+      setSelectedIds(new Set());  //Para limpiar las selecciones al obtener de nuevo las cuotas.
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -228,6 +234,12 @@ export function CuotaAdminTable() {
   const openModal = () => selectedIds.size && setOpen(true);
   const closeModal = () => setOpen(false);
   const handleSuccess = () => handleBuscar(); //Recarga las mismas cuotas
+
+  //Ultimos datos necesarios para la paginación.
+  const totalItems = cuotas.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (page - 1) * pageSize;
+  const paginatedCuotas = cuotas.slice(startIndex, startIndex + pageSize);
 
 
   const tableHeaderStyle = "bg-[#fff0] text-[#fff] justify-center";
@@ -268,7 +280,7 @@ export function CuotaAdminTable() {
               </tr>
             </thead>
             <tbody>
-              {cuotas.map(c => (
+              {paginatedCuotas.map(c => (
                 <tr key={c.id}> 
                   <td className={selectedIds.has(c.id) ? 'bg-purple-200 rounded-lg md:bg-transparent truncate max-w-[20px] p-1.5 min-w-5 w-8' : 'truncate max-w-[20px] p-1.5 min-w-5 w-8'}>
                     <input
@@ -291,6 +303,42 @@ export function CuotaAdminTable() {
             </tbody>
           </table>
         </div>
+
+        { totalItems > pageSize && (
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Mostrando {startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)} de {totalItems}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => { setPage(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={page === 1}
+              className="px-2 py-1 rounded border text-white disabled:opacity-50"
+            >-- Primero</button>
+
+            <button
+              onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={page === 1}
+              className="px-2 py-1 rounded border text-white disabled:opacity-50"
+            >- Anterior</button>
+
+            <button
+              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={page === totalPages}
+              className="px-2 py-1 rounded border text-white disabled:opacity-50"
+            >Siguiente +</button>
+
+            <button
+              onClick={() => { setPage(totalPages); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={page === totalPages}
+              className="px-2 py-1 rounded border text-white disabled:opacity-50"
+            >Último ++</button>
+          </div>
+        </div>
+        ) }
+
+
 
         <div className="mt-4 flex flex-col space-y-2">
           <button

@@ -1,4 +1,4 @@
-import { CuotaAdminTable } from './CuotaTable';
+import { CuotaAdminTable } from './CuotaAdminTable';
 import { CuotaAlumnoTable } from './CuotaAlumnoTable';
 import '../../../public/dance.ico'
 

@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import { utils, write } from 'xlsx';
 import { saveAs } from 'file-saver';
 
 
@@ -9,11 +9,11 @@ export function exportarYearExcel(year: number, byYearData: Record<string, numbe
     Total: total
   }));
 
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `Totales ${year}`);
+  const ws = utils.json_to_sheet(rows);
+  const wb = utils.book_new();
+  utils.book_append_sheet(wb, ws, `Totales ${year}`);
 
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const wbout = write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], { type: 'application/octet-stream' });
   saveAs(blob, `totales_${year}.xlsx`);
 }
@@ -28,15 +28,15 @@ export function exportarMesExcel(year: number, month: number, byMonthData: {Deta
     Monto: d.montoPagado
   }));
 
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `Detalle ${year}-${String(month).padStart(2,'0')}`);
+  const ws = utils.json_to_sheet(rows);
+  const wb = utils.book_new();
+  utils.book_append_sheet(wb, ws, `Detalle ${year}-${String(month).padStart(2,'0')}`);
 
   //Y una fila final con total
   const totRowIndex = rows.length + 2;
-  XLSX.utils.sheet_add_aoa(ws, [['', 'Total', byMonthData.Total]], { origin: `A${totRowIndex}` });
+  utils.sheet_add_aoa(ws, [['', 'Total', byMonthData.Total]], { origin: `A${totRowIndex}` });
 
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const wbout = write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], { type: 'application/octet-stream' });
   saveAs(blob, `detalle_${year}_${String(month).padStart(2,'0')}.xlsx`);
 }
