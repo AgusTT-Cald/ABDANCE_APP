@@ -235,6 +235,7 @@ export function CuotaAdminTable() {
   const closeModal = () => setOpen(false);
   const handleSuccess = () => handleBuscar(); //Recarga las mismas cuotas
 
+
   //Ultimos datos necesarios para la paginación.
   const totalItems = cuotas.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -304,38 +305,39 @@ export function CuotaAdminTable() {
           </table>
         </div>
 
+
         { totalItems > pageSize && (
-        <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            Mostrando {startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)} de {totalItems}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Mostrando {startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)} de {totalItems}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => { setPage(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={page === 1}
+                className="px-2 py-1 rounded border text-white disabled:opacity-50"
+              >-- Primero</button>
+
+              <button
+                onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={page === 1}
+                className="px-2 py-1 rounded border text-white disabled:opacity-50"
+              >- Anterior</button>
+
+              <button
+                onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={page === totalPages}
+                className="px-2 py-1 rounded border text-white disabled:opacity-50"
+              >Siguiente +</button>
+
+              <button
+                onClick={() => { setPage(totalPages); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={page === totalPages}
+                className="px-2 py-1 rounded border text-white disabled:opacity-50"
+              >Último ++</button>
+            </div>
           </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => { setPage(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              disabled={page === 1}
-              className="px-2 py-1 rounded border text-white disabled:opacity-50"
-            >-- Primero</button>
-
-            <button
-              onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              disabled={page === 1}
-              className="px-2 py-1 rounded border text-white disabled:opacity-50"
-            >- Anterior</button>
-
-            <button
-              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              disabled={page === totalPages}
-              className="px-2 py-1 rounded border text-white disabled:opacity-50"
-            >Siguiente +</button>
-
-            <button
-              onClick={() => { setPage(totalPages); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              disabled={page === totalPages}
-              className="px-2 py-1 rounded border text-white disabled:opacity-50"
-            >Último ++</button>
-          </div>
-        </div>
         ) }
 
 
@@ -402,7 +404,7 @@ export function CuotaAdminTable() {
               ))}
             </select>
         </div>
-        <div className="ml-auto my-auto place-self-center">
+        <div className="mr-auto mt-auto">
           <button
             onClick={handleBuscar}
             className="self-end px-4 py-2 text-white rounded"

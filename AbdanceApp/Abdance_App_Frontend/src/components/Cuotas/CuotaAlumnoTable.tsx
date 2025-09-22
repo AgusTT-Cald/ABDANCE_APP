@@ -1,5 +1,4 @@
 import Loader from "../Loader";
-import generalDateParsing from "../../utils/generalDateParsing";
 import axios from "axios";
 import icon from '../../../public/dance.ico'
 import MensajeAlerta from "../MensajeAlerta";
@@ -16,9 +15,15 @@ export function CuotaAlumnoTable() {
   const endpointUrl = import.meta.env.VITE_API_URL;
   const usuario = JSON.parse(localStorage.getItem('usuario') ?? '{}');
   const dniAlumno = usuario.dni ?? ""
+
   const [reload, setReload] = useState(0);
   const [selectedCuota, setSelectedCuota] = useState<Cuota | null>(null);
   const [openModal, setOpenModal] = useState(false);
+
+  //Paginación
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 15;
+
   
   const endpoint = dniAlumno
     ? `${endpointUrl}/cuotas/alumno?dia_recargo=11&dniAlumno=${dniAlumno}&limite=100&reload=${reload}`
@@ -37,8 +42,6 @@ export function CuotaAlumnoTable() {
     );
   });
 
-  const tableHeaderStyle = "bg-[#fff0] text-[#fff] justify-center";
-  const tableDatacellStyle = "text-blue-500 bg-white rounded-xl m-0.5 p-1";
 
   const handleRowClick = (c: Cuota) => {
     if (c.estado.toLowerCase() === 'pagada') return; // no seleccionable
@@ -50,6 +53,17 @@ export function CuotaAlumnoTable() {
     setOpenModal(false);
     setSelectedCuota(null);
   };
+
+
+  const totalItems = filteredCuotas?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (page - 1) * pageSize;
+  const paginatedCuotas = filteredCuotas?.slice(startIndex, startIndex + pageSize) ?? null;
+
+
+  const tableHeaderStyle = "bg-[#fff0] text-[#fff] justify-center";
+  const tableDatacellStyle = "text-blue-500 bg-white rounded-xl m-0.5 p-1";
+
 
   if (loading) return  <div className="flex justify-center align-middle items-center w-full h-full"><Loader /></div>;
   if (error) return <MensajeAlerta tipo="error" mensaje={`Error: ${error}`}></MensajeAlerta>;
@@ -99,7 +113,7 @@ export function CuotaAlumnoTable() {
               </tr>
             </thead>
             <tbody>
-              {filteredCuotas?.map(c => (
+              {paginatedCuotas?.map(c => (
                 <tr
                   key={c.id}
                   onClick={() => handleRowClick(c)}
@@ -120,8 +134,10 @@ export function CuotaAlumnoTable() {
           </div>
         </div>
 
+
+        {/* Cartas de cuotas para pantallas pequeñas */}
         <div className="block md:hidden flex flex-wrap mt-10 justify-between mb-4 mx-2">
-            {cuotas?.map(c => (
+            {paginatedCuotas?.map(c => (
                 <div key={c.id} className="relative flex w-50 flex-col rounded-xl bg-gradient-to-t from-rose-200 bg-slate-300 bg-clip-border text-gray-700 shadow-md mt-3 mx-1">
                     <div className="p-6">
                         <h5 className="mb-2 block font-sans text-xl font-semibold leading-snug tracking-normal text-gray-900 antialiased">
@@ -131,7 +147,7 @@ export function CuotaAlumnoTable() {
                         {c.nombreDisciplina}
                         </h6>
                         <p className="block font-sans text-base leading-relaxed text-gray-900 antialiased">
-                        <b>A pagar:</b> ${c.precio_cuota}
+                        <b>Monto:</b> ${c.precio_cuota}
                         </p>
                         <p className="block font-sans text-base leading-relaxed text-gray-900 antialiased">
                         <b>Tipo de Monto:</b> {c.tipoMonto}
@@ -140,12 +156,14 @@ export function CuotaAlumnoTable() {
                         <b>Estado:</b> {c.estado}
                         </p>
                         <p className="capitalize block font-sans text-base leading-relaxed text-gray-900 antialiased">
-                        <b>Fecha de Pago:</b> {c.fechaPago?.trim() == "" ? "-" : generalDateParsing(c.fechaPago)}
+                        <b>Fecha de Pago:</b> {c.fechaPago?.trim() == "" ? "-" : new Date(c.fechaPago).toLocaleString("es-AR")}
                         </p>
                     </div>
                     <div className="p-6 pt-0">
                         <button onClick={() => handleRowClick(c)} data-ripple-light="true" type="button" disabled={c.estado.toLowerCase()==='pagada'}
-                        className='rounded-lg bg-violet-500 text-center align-middle text-xs font-bold uppercase text-white shadow-md shadow-violet-500/20 transition-all hover:shadow-lg hover:shadow-violet-500/40 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'>
+                        className='rounded-lg bg-violet-500 text-center align-middle text-xs font-bold uppercase text-white shadow-md shadow-violet-500/20 
+                        transition-all hover:shadow-lg hover:shadow-violet-500/40 focus:opacity-[0.85] active:opacity-[0.85] 
+                        active:shadow-none disabled:pointer-events-none disabled:opacity-50'>
                         Pagar cuota
                         </button>
                     </div>
@@ -153,6 +171,43 @@ export function CuotaAlumnoTable() {
             ))}
         </div>
         <p className="md:block hidden italic text-lg font-medium text-gray-200 md:text-gray-800">Presione en una cuota sin pagar para pagarla.</p>
+
+
+        {/* Números de página */}
+        { totalItems > pageSize && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Mostrando {startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)} de {totalItems}
+            </div>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => { setPage(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={page === 1}
+              className="px-2 py-1 rounded border text-white disabled:opacity-50"
+            >-- Primero</button>
+
+            <button
+              onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={page === 1}
+              className="px-2 py-1 rounded border text-white disabled:opacity-50"
+            >- Anterior</button>
+
+            <button
+              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={page === totalPages}
+              className="px-2 py-1 rounded border text-white disabled:opacity-50"
+            >Siguiente +</button>
+
+            <button
+              onClick={() => { setPage(totalPages); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              disabled={page === totalPages}
+              className="px-2 py-1 rounded border text-white disabled:opacity-50"
+            >Último ++</button>
+          </div>
+        </div>
+        ) }
+
 
         {/* Modal de MercadoPago */}
         {selectedCuota && (
