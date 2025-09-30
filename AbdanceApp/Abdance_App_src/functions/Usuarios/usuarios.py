@@ -1,7 +1,7 @@
 
 import functions_framework
-import firebase_admin
 from firebase_admin import credentials, firestore, auth
+from functions.Cuotas.utilidades_cuotas import marcar_cuotas_eliminacion_usuario
 from firebase_init import db  # Firebase con base de datos inicializada
 from datetime import datetime
 from .auth_decorator import require_auth
@@ -40,7 +40,7 @@ def parsearFecha(value_date):
     except ValueError:
             return {'error': 'Formato de fecha inválido'}, 400 # formato de la fecha = YYYY-mm-ddThh:mm:ss.499588
 
-@require_auth(required_roles=['admin', 'profesor']) 
+#@require_auth(required_roles=['admin', 'profesor']) 
 def getUsuarios(request, uid=None, role=None):
     # Si se pide un dni de esta manera: usuarios?dni= <dni de alguien> se devuelve solo un usuario
         params = request.args
@@ -141,7 +141,6 @@ def postUsuarios(request, uid=None, role=None):
             return {'message': 'Usuario registrado exitosamente', 'user_id': usuario.uid}, 201
         except Exception as e:
             return {'error': str(e) }, 400
-            return
 
 @require_auth(required_roles=['admin', 'profesor']) 
 def putUsuarios(request, uid=None, role=None):
@@ -199,6 +198,9 @@ def deleteUsuarios(request, uid=None, role=None):
             auth.delete_user(user_uid)
         except Exception as e:
             return {'error':f'No se pudo eliminar usuario:({str(e)})'}, 500
+    
+    #Se actualizan las cuotas en la BD
+    marcar_cuotas_eliminacion_usuario(data['dni'])
     
     #eliminacion de BD firestore
     user_ref.delete()

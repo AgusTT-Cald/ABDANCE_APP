@@ -22,9 +22,9 @@ const CustomForm = () => {
     const {control, handleSubmit, formState: {errors}} = useForm<FormValues>({
         resolver: zodResolver(schema)
     });
-const onSubmit: SubmitHandler<FormValues> = (data) =>{
-    console.log(data);
-}
+    const onSubmit: SubmitHandler<FormValues> = (data) =>{
+        console.log(data);
+    }
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>

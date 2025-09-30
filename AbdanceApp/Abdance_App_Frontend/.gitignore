@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+#Database Config
+firebase-config.ts
+AbdanceApp/Abdance_App_Frontend/src/firebase-config.ts

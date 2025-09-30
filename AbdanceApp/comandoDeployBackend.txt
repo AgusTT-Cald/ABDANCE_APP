@@ -1,12 +1,22 @@
+COMANDO CON SECRETOS:
 gcloud functions deploy main \
-  --runtime python310 \
+  --runtime=python310 \
   --trigger-http \
   --allow-unauthenticated \
-  --region southamerica-east1
+  --region=southamerica-east1 \
+  --set-secrets \
+    MP_ACCESS_TOKEN_TEST=projects/675808082339/secrets/MP_ACCESS_TOKEN_TEST:latest,\
+MP_PUBLIC_KEY_TEST=projects/675808082339/secrets/MP_PUBLIC_KEY_TEST:latest,\
+MP_WEBHOOK_KEY=projects/675808082339/secrets/MP_WEBHOOK_KEY:latest,\
+MERCADOPAGO_ACCESS_TOKEN=projects/675808082339/secrets/MERCADOPAGO_ACCESS_TOKEN:latest,\
+MAIL_USER=projects/675808082339/secrets/MAIL_USER:latest,\
+MAIL_PASS=projects/675808082339/secrets/MAIL_PASS:latest,\
+MAIL_FROM=projects/675808082339/secrets/MAIL_FROM:latest
 
 
 
 
+COMANDO MÁS ACTUALIZADO?:
 gcloud functions deploy main   
 --runtime=python310  
  --trigger-http   
@@ -30,6 +40,8 @@ gcloud functions deploy main
     GCP_PROJECT_ID=projects/675808082339/secrets/GCP_PROJECT_ID:latest,
     GCP_QUEUE_NAME=projects/675808082339/secrets/GCP_QUEUE_NAME:latest,
     GCP_LOCATION=projects/675808082339/secrets/GCP_LOCATION:latest,
+    DIA_RECARGO=projects/675808082339/secrets/DIA_RECARGO:latest,
+    FRONT_URL=projects/675808082339/secrets/FRONT_URL:latest,
     MP_NOTIFICATION_URL=projects/675808082339/secrets/MP_NOTIFICATION_URL:latest
 
 

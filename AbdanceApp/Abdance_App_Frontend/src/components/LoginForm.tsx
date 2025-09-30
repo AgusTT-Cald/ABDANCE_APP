@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {z} from "zod";
 import InputForm from "./CustomInput";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { getRole, useLogin } from "../hooks/useLogin";
+import { getRole, useLogin, getDNI } from "../hooks/useLogin";
 import { useNavigate } from "react-router-dom";
 
 
@@ -36,6 +36,7 @@ const LoginForm = () => {
         }
         if (resultado) {
             const rol = await getRole(resultado.usuario.uid)
+            const dni = await getDNI(resultado.usuario.uid)
             
             if (!rol) {
             // Manejo si no tiene rol
@@ -46,6 +47,7 @@ const LoginForm = () => {
                 email: resultado.usuario.email,
                 uid: resultado.usuario.uid,
                 rol,
+                dni,
             }));
             navigate("/dashboard");
             //window.location.href = "https://www.youtube.com";
@@ -58,7 +60,7 @@ const LoginForm = () => {
             <InputForm name='password'control={control} label="Password" type="password" error={errors.password} />
 
             <button type="submit" className="m-2" disabled={loading}>{loading ? "Cargando": "Iniciar Sesión"}</button>
-            {error && <p className="text-red-500 bg-amber-100">{error}</p>}
+            {error && <p className="text-red-500 bg-amber-100">{error}</p>} 
         </form>
     )
 }

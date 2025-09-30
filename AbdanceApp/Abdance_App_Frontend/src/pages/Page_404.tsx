@@ -20,7 +20,7 @@ export const Page_404 = ({children}: Props) =>{
     const location = useLocation();
 
   // Ruta previa si viene redirigido desde una ruta protegida
-    const rutaPrev = location.state?.from?.pathname || "/dashboard";
+    const rutaPrev = location.state?.from?.pathname ?? "/dashboard";
 
     const volver = () => {
         navigate(rutaPrev);

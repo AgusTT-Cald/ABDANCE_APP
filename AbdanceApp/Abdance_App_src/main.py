@@ -13,11 +13,27 @@ from functions.Asistencias.asistencias import (
     inasistencias, 
     registrar_inasistencia
 )
-from functions.Cuotas.pagos import cuotas
+from functions.Cuotas.cuotas import (
+    cuotas, 
+    getCuotasDNIAlumno,
+    crear_cuotas_mes,
+    eliminar_cuotas_forma_automatica
+)
+from functions.Estadisticas.estadisticas import (
+    total_pagado_mes,
+    totales_por_mes_anio
+)
+from functions.Cuotas.pagos import(
+    pagar_cuota,
+    pagar_cuotas_manualmente
+)
+from functions.Cuotas.pagos import crear_preferencia_cuota
 from functions.Usuarios.auth_users import register_student
 from functions.Usuarios.usuarios import eliminar_usuario_con_inscripciones, usuarios
 from functions.Eventos.eventos import eventos
-from functions.Disciplinas.disciplinas import disciplinas, gestionarAlumnosDisciplina
+from functions.Disciplinas.disciplinas import disciplinas, gestionarAlumnosDisciplina, datos_necesarios_disciplinas
+from functions.Eventos.entradas import entradas
+from functions.Eventos.crear_preferencia import crear_preferencia
 
 
 # #funciones 
@@ -57,9 +73,31 @@ def main(request):
     if path == '/' and method == 'GET':
         return 'Hola Main View', 200 
     elif path == '/cuotas':
-        return cuotas(request)
+        return apply_cors(cuotas(request))
+    elif path == '/cuotas/alumno':
+        return apply_cors(getCuotasDNIAlumno(request))
+    elif path == '/cuotas/datos-disciplina':
+        return apply_cors(datos_necesarios_disciplinas(request))
+    elif path == "/crear_preferencia_cuota":
+        return apply_cors(crear_preferencia_cuota(request) )
+    elif path == "/pagar_cuota":
+        return apply_cors(pagar_cuota(request))
+    elif path == "/pagar_cuota/manual":
+        return apply_cors(pagar_cuotas_manualmente(request))
+    elif path == "/crear-cuotas-mes":
+        return apply_cors(crear_cuotas_mes(request))
+    elif path == "/eliminar-cuotas-forma-automatica":
+        return apply_cors(eliminar_cuotas_forma_automatica(request))
+    elif path == "/estadisticas/total-del-mes":
+        return apply_cors(total_pagado_mes(request))
+    elif path == "/estadisticas/totales-por-anio":
+        return apply_cors(totales_por_mes_anio(request))
     elif path == '/eventos':
-        return eventos(request) 
+        return eventos(request)
+    elif path == '/entradas':
+        return entradas(request)
+    elif path == '/crear_preferencia':
+        return crear_preferencia(request)
     elif path == '/usuarios/register-student':
         return register_student(request) 
     elif path == '/usuarios':
@@ -84,4 +122,27 @@ def main(request):
     else:
         return 'Method not allowed', 405
     
+
+""" if __name__ == '__main__':
+    from flask import Flask, request
+    from werkzeug.serving import run_simple
+    from flask_cors import CORS
+
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+
+    flask_app = Flask(__name__)
+    CORS(flask_app) 
+    
+    @flask_app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    @flask_app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    def catch_all(path):
+        try:
+            return main(request)
+        except Exception as e:
+            # Esto imprime el error en la consola
+            flask_app.logger.error(f"Error interno: {e}", exc_info=True)
+            return "Error interno en el servidor", 500
+
+    run_simple('127.0.0.1', 5000, flask_app, use_debugger=True, use_reloader=True) """
 

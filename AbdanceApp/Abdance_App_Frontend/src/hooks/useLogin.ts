@@ -1,6 +1,6 @@
 import { getIdToken, signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
-import { auth, db } from "../firebase-config";
+import { auth, db } from "../firebase-config"
 
 
 export const useLogin= () =>{
@@ -81,6 +81,30 @@ export const getRole = async(usuarioUid: string):  Promise <string | null> => {
         }
     } catch (error) {
         console.error("Error obteniendo el rol:", error);
+        return null;
+    }
+};
+
+
+export const getDNI = async(usuarioUid: string):  Promise <string | null> => {
+    try {
+        const usersRef = collection(db, "usuarios");
+        const q = query(usersRef, where("user_uid", "==", usuarioUid));
+        const querySnapshot = await getDocs(q);
+
+
+        if (!querySnapshot.empty) {
+
+            const userDoc = querySnapshot.docs[0];//se piensa que solo hay un documento
+            const data = userDoc.data();
+            return data.dni ?? null;
+
+        } else {
+        console.warn("No existe el documento del usuario");
+        return null;
+        }
+    } catch (error) {
+        console.error("Error obteniendo el DNI:", error);
         return null;
     }
 };

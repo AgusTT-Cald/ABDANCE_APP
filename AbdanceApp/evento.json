@@ -1,0 +1,20 @@
+{
+  "nombre": "Show Bienal 2025",
+  "lugar": "Escenario Galatea",
+  "fecha": "2025-07-21T16:30:00.000000",
+  "urlImg": "https://example.com/primerGalaShow2025.jpg",
+  "conEntrada": false,
+  "descripcion": "Anunciamos nuestra Participacion en el evento mas importante a nivel NACIONAL E INTERNACIONAL “BIENAL DEL CHACO 2025”.",
+  "entradas": [
+    {
+      "tipo": "VIP",
+      "precio": 1000,
+      "cantidad": 100
+    },
+    {
+      "tipo": "General",
+      "precio": 5000,
+      "cantidad": 300
+    }
+  ]
+}

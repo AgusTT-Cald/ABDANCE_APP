@@ -4,6 +4,7 @@ import functions_framework
 import firebase_admin
 from collections import OrderedDict
 from firebase_admin import credentials, firestore, auth
+from functions.Cuotas.utilidades_cuotas import marcar_cuotas_eliminacion_disciplina
 from firebase_init import db  # Firebase con base de datos inicializada
 from datetime import datetime, time
 from functions.Usuarios.auth_decorator import require_auth
@@ -277,6 +278,9 @@ def deleteDisciplina(request, uid=None, role=None):
         # eliminar dinámicamente todas las subcolecciones para asegurar eliminacion total
         delete_all_subcollections(disciplina_ref)
 
+        #Marcar en las cuotas que la disciplina se eliminará
+        marcar_cuotas_eliminacion_disciplina(disciplina_id)
+
         # Eliminar el documento principal
         disciplina_ref.delete()
 
@@ -307,3 +311,24 @@ def gestionarAlumnosDisciplina(request, uid=None, role=None):
 
     except Exception as e:
         return {'error': str(e)}, 500
+
+
+"Agus: Agregué esta función para no usar el get que me trae muchisimos datos que no necesito."
+#@require_auth(required_roles=['admin'])
+def datos_necesarios_disciplinas(request, uid=None, role=None):
+    try:
+        disciplinas = []
+        disciplinas_ref = db.collection('disciplinas')
+        
+        for doc in disciplinas_ref.stream():
+            data_disciplina = doc.to_dict()
+            disciplina_data = {}
+            disciplina_data["nombre"] = data_disciplina.get("nombre")
+            disciplina_data["id"] = data_disciplina.get("id")
+            
+            disciplinas.append(disciplina_data)
+            
+        return disciplinas, 200
+    
+    except Exception as e:
+        return {'error': e}, 500

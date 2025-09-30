@@ -1,3 +1,4 @@
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -25,6 +26,7 @@ a:hover {
 body {
   margin: 0;
   display: flex;
+  background: linear-gradient(180deg, #270359 0%, #5406BF 100%);
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
@@ -130,6 +132,58 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 } */
+
+
+/* styles.css */
+.neon-button {
+  color: white;
+  background: transparent;
+  border: 3px solid white;
+  padding: 12px 36px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.6); /* sombra neón rosada */
+  text-align: center;
+}
+
+.neon-button::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+  z-index: -1;
+  background: rgba(255, 0, 255, 0.2);
+  filter: blur(10px); /* difuminado rosa detrás */
+  border-radius: 16px;
+}
+
+
+.simple-button {
+  color: white;
+  background: transparent;
+  border: 3px solid white;
+  padding: 12px 36px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.simple-button:hover {
+  background-color: white;
+  color: black;
+}
 
 .truncate-cell {
   max-width: 120px; /* Ajusta según necesidad */
